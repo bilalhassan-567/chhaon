@@ -3,25 +3,47 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>{% block title %}Chhaon{% endblock %}</title>
+  <title>{% block title %}Chhaon &mdash; Shade{% endblock %}</title>
+  <meta name="description" content="Chhaon (چھاؤں — Shade): community-reported heat-injury signal for Lahore over WhatsApp, correlated against real heat-index data and compared against the documented official-figures gap." />
+  <meta property="og:title" content="Chhaon — Shade" />
+  <meta property="og:description" content="Community heat-injury reporting and preparedness for Lahore. No app, no login — just WhatsApp." />
+  <meta property="og:type" content="website" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%B3%3C/text%3E%3C/svg%3E" />
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            shade: { 50: '#f0fdfa', 100: '#ccfbf1', 600: '#0d9488', 700: '#0f766e', 900: '#134e4a' },
+            heat: { 50: '#fff7ed', 100: '#ffedd5', 500: '#f97316', 600: '#ea580c', 700: '#c2410c' },
+          },
+        },
+      },
+    };
+  </script>
   {% block head %}{% endblock %}
 </head>
-<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col">
-  <header class="bg-slate-900 text-white">
-    <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-      <a href="/" class="text-lg font-semibold tracking-wide">CHHAON <span class="text-slate-400 font-normal">چھاؤں</span></a>
-      <nav class="flex gap-4 text-sm">
-        <a href="/" class="hover:underline">Map</a>
-        <a href="/gap" class="hover:underline">Gap Dashboard</a>
+<body class="bg-shade-50 text-slate-900 min-h-screen flex flex-col">
+  <header class="bg-gradient-to-r from-shade-900 to-slate-900 text-white">
+    <div class="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between flex-wrap gap-2">
+      <a href="/" class="flex items-baseline gap-2">
+        <span class="text-xl font-bold tracking-wide">🌳 CHHAON</span>
+        <span class="text-shade-100/70 font-normal text-sm">چھاؤں &middot; Shade</span>
+      </a>
+      <nav class="flex gap-5 text-sm font-medium">
+        <a href="/" class="hover:text-heat-500 transition-colors">Live Map</a>
+        <a href="/gap" class="hover:text-heat-500 transition-colors">Gap Dashboard</a>
+        <a href="https://github.com/bilalhassan-567/chhaon" class="hover:text-heat-500 transition-colors">GitHub</a>
       </nav>
     </div>
   </header>
 
-  <div class="bg-amber-100 border-b border-amber-300 text-amber-900 text-sm">
-    <div class="max-w-5xl mx-auto px-4 py-2">
-      &#9888; Community-reported signal &mdash; not a verified medical or legal record.
-      No names or exact addresses are ever collected.
+  <div class="bg-amber-50 border-b border-amber-200 text-amber-900 text-sm">
+    <div class="max-w-5xl mx-auto px-4 py-2 flex items-start gap-2">
+      <span>&#9888;&#65039;</span>
+      <span>Community-reported signal &mdash; not a verified medical or legal record.
+      No names or exact addresses are ever collected.</span>
     </div>
   </div>
 
@@ -29,8 +51,11 @@
     {% block content %}{% endblock %}
   </main>
 
-  <footer class="text-center text-xs text-slate-400 py-4">
-    Chhaon &mdash; Smart City Hackathon Lahore 2026 &middot; City Intelligence
+  <footer class="text-center text-xs text-slate-400 py-6 border-t border-slate-200 mt-8">
+    <p>Chhaon &mdash; Smart City Hackathon Lahore 2026 &middot; City Intelligence track</p>
+    <p class="mt-1">
+      <a href="https://github.com/bilalhassan-567/chhaon" class="underline hover:text-shade-600">Source on GitHub</a>
+    </p>
   </footer>
 </body>
 </html>

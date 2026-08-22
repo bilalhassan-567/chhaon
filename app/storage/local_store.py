@@ -66,6 +66,7 @@ class LocalJSONReportStore(ReportStore):
                 lon=new_report.lon,
                 geo_source=new_report.geo_source,
                 incident_type=new_report.incident_type,
+                source=new_report.source,
                 timestamp=now,
             )
             rows.append(json.loads(report.model_dump_json()))

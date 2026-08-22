@@ -21,16 +21,28 @@ def heat_index():
 @router.get("/api/reports")
 def reports():
     """Zone-level aggregate counts for the map. Never returns individual report
-    detail beyond zone + count — matches the anonymous-by-design schema."""
-    counts = get_store().counts_by_zone()
+    detail beyond zone + count — matches the anonymous-by-design schema. Splits each
+    zone's count into real (WhatsApp) vs demo-seeded so the map can disclose which
+    markers are seeded for reliability during judging, same honesty standard as the
+    Gap Dashboard — never presents seed data as real incoming reports."""
     zones_by_id = {z.id: z for z in load_zones()}
+    by_zone: dict[str, dict] = {}
+    for r in get_store().list_since():
+        entry = by_zone.setdefault(r.zone_id, {"real": 0, "demo": 0})
+        if r.source == "demo_seed":
+            entry["demo"] += r.report_count
+        else:
+            entry["real"] += r.report_count
+
     return [
         {
             "zone_id": zone_id,
             "zone_name": zones_by_id[zone_id].name if zone_id in zones_by_id else zone_id,
             "lat": zones_by_id[zone_id].lat if zone_id in zones_by_id else None,
             "lon": zones_by_id[zone_id].lon if zone_id in zones_by_id else None,
-            "count": count,
+            "count": counts["real"] + counts["demo"],
+            "real_count": counts["real"],
+            "demo_count": counts["demo"],
         }
-        for zone_id, count in counts.items()
+        for zone_id, counts in by_zone.items()
     ]

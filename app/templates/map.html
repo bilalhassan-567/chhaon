@@ -3,21 +3,45 @@
 {% block head %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<style>#map { height: 480px; }</style>
+<style>
+  #map { height: 480px; }
+  .leaflet-popup-content-wrapper { border-radius: 0.5rem; }
+</style>
 {% endblock %}
 
 {% block content %}
-<div class="mb-4 flex items-center justify-between">
-  <h1 class="text-xl font-semibold">Live Community Heat-Risk Map</h1>
-  <div id="heat-index" class="text-sm text-slate-600">Loading current heat index&hellip;</div>
+<div class="mb-5">
+  <h1 class="text-2xl font-bold text-slate-900">Live Community Heat-Risk Map</h1>
+  <p class="text-sm text-slate-500 mt-1">
+    Reports come in over WhatsApp &mdash; no app, no login. Zone circles scale with
+    report density; heat-index data is live from Open-Meteo.
+  </p>
+</div>
+
+<div class="grid grid-cols-3 gap-3 mb-4">
+  <div class="bg-white border border-slate-200 rounded-lg p-3 shadow-sm">
+    <p class="text-xs uppercase tracking-wide text-slate-400 font-medium">Feels like</p>
+    <p id="stat-apparent" class="text-2xl font-bold text-heat-600 mt-1">&hellip;</p>
+  </div>
+  <div class="bg-white border border-slate-200 rounded-lg p-3 shadow-sm">
+    <p class="text-xs uppercase tracking-wide text-slate-400 font-medium">Air temp / humidity</p>
+    <p id="stat-air" class="text-2xl font-bold text-slate-700 mt-1">&hellip;</p>
+  </div>
+  <div class="bg-white border border-slate-200 rounded-lg p-3 shadow-sm">
+    <p class="text-xs uppercase tracking-wide text-slate-400 font-medium">Zones reporting</p>
+    <p id="stat-zones" class="text-2xl font-bold text-shade-700 mt-1">&hellip;</p>
+  </div>
 </div>
 
 <div id="map" class="rounded-lg border border-slate-300 shadow-sm"></div>
 
+<div class="mt-3 flex items-center gap-4 text-xs text-slate-500">
+  <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded-full" style="background:#ef4444;opacity:.6"></span> Real WhatsApp reports</span>
+  <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded-full" style="background:#f59e0b;opacity:.6"></span> Demo reports (seeded for reliability during judging)</span>
+</div>
+
 <p class="mt-4 text-sm text-slate-500">
-  Zone circles scale with report density. Reports come in over WhatsApp; heat-index
-  data is live from Open-Meteo.
-  <a href="/gap" class="text-sky-700 underline">See the Gap Dashboard &rarr;</a>
+  <a href="/gap" class="text-shade-700 font-medium underline">See the Gap Dashboard &rarr;</a>
 </p>
 
 <script>
@@ -29,28 +53,36 @@
   fetch('/api/heat-index')
     .then((r) => r.json())
     .then((d) => {
-      document.getElementById('heat-index').textContent =
-        `Current Lahore heat index (feels like): ${d.apparent_temperature_c}°C ` +
-        `(air temp ${d.temperature_c}°C, humidity ${d.relative_humidity_pct}%)`;
+      document.getElementById('stat-apparent').textContent = `${d.apparent_temperature_c}°C`;
+      document.getElementById('stat-air').textContent = `${d.temperature_c}°C / ${d.relative_humidity_pct}%`;
     })
     .catch(() => {
-      document.getElementById('heat-index').textContent = 'Heat index unavailable right now.';
+      document.getElementById('stat-apparent').textContent = 'n/a';
+      document.getElementById('stat-air').textContent = 'n/a';
     });
 
   fetch('/api/reports')
     .then((r) => r.json())
     .then((zones) => {
+      document.getElementById('stat-zones').textContent = zones.length;
       zones.forEach((z) => {
         if (z.lat === null) return;
         const radius = 300 + z.count * 250;
+        const isMixed = z.real_count > 0 && z.demo_count > 0;
+        const color = isMixed || z.real_count > 0 ? '#ef4444' : '#f59e0b';
         L.circle([z.lat, z.lon], {
           radius,
-          color: '#b91c1c',
-          fillColor: '#ef4444',
+          color,
+          fillColor: color,
           fillOpacity: 0.35,
+          weight: 2,
         })
           .addTo(map)
-          .bindPopup(`<strong>${z.zone_name}</strong><br>${z.count} report(s)`);
+          .bindPopup(
+            `<strong>${z.zone_name}</strong><br>` +
+            (z.real_count > 0 ? `${z.real_count} real report(s) via WhatsApp<br>` : '') +
+            (z.demo_count > 0 ? `${z.demo_count} demo report(s) (seeded for reliability)` : '')
+          );
       });
     });
 </script>

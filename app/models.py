@@ -24,6 +24,10 @@ class NewReport(BaseModel):
     lon: float | None = None
     geo_source: GeoSource
     incident_type: IncidentType
+    # "whatsapp" for real intake (the default, never overridden by whatsapp_flow.py);
+    # "demo_seed" for reports written by scripts/seed_demo_reports.py so the UI can
+    # honestly disclose which visible signal is real vs seeded for demo reliability.
+    source: str = "whatsapp"
 
 
 class Report(NewReport):
@@ -31,7 +35,6 @@ class Report(NewReport):
 
     id: str
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    source: str = "whatsapp"
     report_count: int = 1
 
 

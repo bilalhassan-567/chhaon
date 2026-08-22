@@ -85,6 +85,7 @@ class FirestoreReportStore(ReportStore):
             lon=new_report.lon,
             geo_source=new_report.geo_source,
             incident_type=new_report.incident_type,
+            source=new_report.source,
             timestamp=now,
         )
         self.collection.document(report.id).set(_report_to_doc(report))

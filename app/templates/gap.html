@@ -2,8 +2,8 @@
 {% block title %}Chhaon &mdash; Gap Dashboard{% endblock %}
 
 {% block content %}
-<h1 class="text-xl font-semibold mb-1">Official-vs-Reported Gap</h1>
-<p class="text-sm text-slate-600 mb-6">
+<h1 class="text-2xl font-bold text-slate-900 mb-1">Official-vs-Reported Gap</h1>
+<p class="text-sm text-slate-600 mb-6 max-w-3xl">
   There is no live official API for heat-mortality data. The two panels below are
   deliberately <strong>not</strong> a same-period comparison: the left panel is what
   Chhaon is capturing live right now; the right panel is documented historical context,
@@ -11,16 +11,20 @@
 </p>
 
 <div class="grid md:grid-cols-2 gap-6">
-  <section class="border border-slate-300 rounded-lg p-4 bg-white">
-    <h2 class="font-semibold mb-3">Live community-reported signal</h2>
-    <p class="text-3xl font-bold text-red-700">{{ total_reports }}</p>
-    <p class="text-sm text-slate-500 mb-4">report(s) since this build started collecting, across {{ zones_reporting }} zone(s)</p>
+  <section class="border border-heat-100 rounded-xl p-5 bg-gradient-to-b from-heat-50 to-white shadow-sm">
+    <h2 class="font-semibold mb-3 text-heat-700 flex items-center gap-2">🔥 Live community-reported signal</h2>
+    <p class="text-4xl font-extrabold text-heat-600">{{ total_reports }}</p>
+    <p class="text-sm text-slate-500 mb-1">report(s) across {{ zones_reporting }} zone(s)</p>
+    <p class="text-xs text-slate-400 mb-4">
+      {{ real_reports }} real (via WhatsApp) &middot; {{ demo_reports }} demo (seeded for
+      reliability during judging)
+    </p>
     {% if by_incident_type %}
     <ul class="text-sm space-y-1">
       {% for incident_type, count in by_incident_type.items() %}
-      <li class="flex justify-between border-b border-slate-100 py-1">
+      <li class="flex justify-between border-b border-heat-100 py-1.5">
         <span class="capitalize">{{ incident_type.replace('_', ' ') }}</span>
-        <span class="font-medium">{{ count }}</span>
+        <span class="font-semibold text-heat-700">{{ count }}</span>
       </li>
       {% endfor %}
     </ul>
@@ -29,14 +33,14 @@
     {% endif %}
   </section>
 
-  <section class="border border-slate-300 rounded-lg p-4 bg-white">
-    <h2 class="font-semibold mb-3">Documented official-side context</h2>
-    <p class="text-xs text-slate-500 mb-3">Manually curated, updated periodically &mdash; not a live feed.</p>
+  <section class="border border-shade-100 rounded-xl p-5 bg-gradient-to-b from-shade-50 to-white shadow-sm">
+    <h2 class="font-semibold mb-3 text-shade-700 flex items-center gap-2">📋 Documented official-side context</h2>
+    <p class="text-xs text-slate-500 mb-4">Manually curated, updated periodically &mdash; not a live feed.</p>
     <div class="space-y-4">
       {% for fig in official_figures %}
-      <div class="border-b border-slate-100 pb-3 last:border-0">
-        <p class="text-sm font-medium">{{ fig.period_label }}</p>
-        <p class="text-lg font-bold text-slate-800">{{ fig.figure_text }}</p>
+      <div class="border-b border-shade-100 pb-3 last:border-0">
+        <p class="text-sm font-medium text-slate-600">{{ fig.period_label }}</p>
+        <p class="text-xl font-bold text-shade-900">{{ fig.figure_text }}</p>
         <p class="text-xs text-slate-500">{{ fig.context }}</p>
         <p class="text-xs text-slate-400 italic mt-1">{{ fig.citation }}</p>
       </div>
@@ -50,6 +54,6 @@
   record. The documented figures above establish that official heat-mortality data is
   known to undercount &mdash; they are historical citations, not a live count for the
   same window as the reports on the left.
-  <a href="/" class="text-sky-700 underline">&larr; Back to the map</a>
+  <a href="/" class="text-shade-700 font-medium underline">&larr; Back to the map</a>
 </p>
 {% endblock %}

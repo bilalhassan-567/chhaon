@@ -15,6 +15,8 @@ templates = Jinja2Templates(directory=str(BASE_DIR / "app" / "templates"))
 def gap_view(request: Request):
     reports = get_store().list_since()
     total_reports = sum(r.report_count for r in reports)
+    real_reports = sum(r.report_count for r in reports if r.source != "demo_seed")
+    demo_reports = total_reports - real_reports
     by_incident_type = Counter()
     for r in reports:
         by_incident_type[r.incident_type.value] += r.report_count
@@ -24,6 +26,8 @@ def gap_view(request: Request):
         "gap.html",
         {
             "total_reports": total_reports,
+            "real_reports": real_reports,
+            "demo_reports": demo_reports,
             "zones_reporting": len({r.zone_id for r in reports}),
             "by_incident_type": dict(by_incident_type),
             "official_figures": load_official_figures(),
