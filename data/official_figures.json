@@ -1,0 +1,36 @@
+{
+  "_meta": {
+    "description": "Manually curated official/documented reference figures — no live official API for heat-mortality data exists (see docs/architecture.md and docs/sources.md). Every entry here must trace exactly to docs/sources.md; never adjust or round a number to make a comparison look starker.",
+    "source_doc": "docs/sources.md"
+  },
+  "figures": [
+    {
+      "id": "punjab_2022",
+      "period_label": "2022 heatwave, Punjab province",
+      "figure_text": "0 heat-related deaths officially recorded",
+      "context": "Temperatures reached 50°C across Punjab (population ~120 million); fewer than 5% of all deaths in Pakistan are registered in any way.",
+      "citation": "Amnesty International, \"Uncounted: Invisible deaths of older people and children during climate disasters in Pakistan,\" May 2025."
+    },
+    {
+      "id": "karachi_2024",
+      "period_label": "2024 heatwave, Karachi",
+      "figure_text": "427 deaths officially attributed",
+      "context": "Amnesty's investigation found over 95% of fatalities during that same crisis were catalogued under other diagnoses.",
+      "citation": "Amnesty International 2025 report, as reported by Inside Climate News, June 2025."
+    },
+    {
+      "id": "national_2024",
+      "period_label": "2024 heatwave, national (concentrated in Sindh)",
+      "figure_text": "568+ recorded deaths, 5,300+ hospital admissions",
+      "context": "Some tallies report 7,900+ admissions. Figures are themselves believed to understate the true toll.",
+      "citation": "2024 Pakistan heat wave event reporting (AP/BBC-sourced aggregation)."
+    },
+    {
+      "id": "lahore_may_2024",
+      "period_label": "Late May 2024, single 24-hour window, Lahore",
+      "figure_text": "72 heatstroke admissions",
+      "context": "Across five named Lahore public hospitals (Services, General, Mayo, Jinnah, Sir Ganga Ram) — a real, sourced number, but a one-day snapshot that vanished from public view the next day.",
+      "citation": "Dawn, \"Dozens in hospital with heatstroke as country sizzles,\" 29 May 2024."
+    }
+  ]
+}

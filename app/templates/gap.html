@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Chhaon &mdash; Gap Dashboard{% endblock %}
+
+{% block content %}
+<h1 class="text-xl font-semibold mb-1">Official-vs-Reported Gap</h1>
+<p class="text-sm text-slate-600 mb-6">
+  There is no live official API for heat-mortality data. The two panels below are
+  deliberately <strong>not</strong> a same-period comparison: the left panel is what
+  Chhaon is capturing live right now; the right panel is documented historical context,
+  manually curated and cited, showing why this gap is real and worth tracking.
+</p>
+
+<div class="grid md:grid-cols-2 gap-6">
+  <section class="border border-slate-300 rounded-lg p-4 bg-white">
+    <h2 class="font-semibold mb-3">Live community-reported signal</h2>
+    <p class="text-3xl font-bold text-red-700">{{ total_reports }}</p>
+    <p class="text-sm text-slate-500 mb-4">report(s) since this build started collecting, across {{ zones_reporting }} zone(s)</p>
+    {% if by_incident_type %}
+    <ul class="text-sm space-y-1">
+      {% for incident_type, count in by_incident_type.items() %}
+      <li class="flex justify-between border-b border-slate-100 py-1">
+        <span class="capitalize">{{ incident_type.replace('_', ' ') }}</span>
+        <span class="font-medium">{{ count }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="text-sm text-slate-400 italic">No reports yet.</p>
+    {% endif %}
+  </section>
+
+  <section class="border border-slate-300 rounded-lg p-4 bg-white">
+    <h2 class="font-semibold mb-3">Documented official-side context</h2>
+    <p class="text-xs text-slate-500 mb-3">Manually curated, updated periodically &mdash; not a live feed.</p>
+    <div class="space-y-4">
+      {% for fig in official_figures %}
+      <div class="border-b border-slate-100 pb-3 last:border-0">
+        <p class="text-sm font-medium">{{ fig.period_label }}</p>
+        <p class="text-lg font-bold text-slate-800">{{ fig.figure_text }}</p>
+        <p class="text-xs text-slate-500">{{ fig.context }}</p>
+        <p class="text-xs text-slate-400 italic mt-1">{{ fig.citation }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+
+<p class="mt-6 text-sm text-slate-600 border-t border-slate-200 pt-4">
+  This is a <strong>community-reported signal</strong>, not a verified medical or legal
+  record. The documented figures above establish that official heat-mortality data is
+  known to undercount &mdash; they are historical citations, not a live count for the
+  same window as the reports on the left.
+  <a href="/" class="text-sky-700 underline">&larr; Back to the map</a>
+</p>
+{% endblock %}

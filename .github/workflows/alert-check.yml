@@ -1,0 +1,42 @@
+name: Heat Alert Threshold Check
+
+# Runs the outbound preventive-alert path (PLAN.md Day 6): checks the live heat index
+# for every zone with at least one registration, sends a WhatsApp warning through
+# Twilio if a zone crosses the danger threshold and isn't in cooldown.
+#
+# Cannot run for real until the Firestore project and Twilio account exist (both are
+# outstanding — see docs/master-workout/PROGRESS.md) and the secrets below are set in
+# this repo's Settings > Secrets and variables > Actions. Until then this workflow is
+# here, correct, and inert — it will fail fast with a clear error rather than silently
+# no-op, since a silent no-op could hide a real misconfiguration once secrets exist.
+
+on:
+  schedule:
+    # Every 3 hours. GitHub's schedule syntax is standard cron, UTC.
+    - cron: "0 */3 * * *"
+  workflow_dispatch: {} # manual trigger, useful for testing once secrets are set
+
+permissions:
+  contents: read
+
+jobs:
+  check-alerts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run threshold check
+        env:
+          STORAGE_BACKEND: firestore
+          FIREBASE_CREDENTIALS_JSON: ${{ secrets.FIREBASE_CREDENTIALS_JSON }}
+          TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
+          TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
+          TWILIO_WHATSAPP_FROM: ${{ secrets.TWILIO_WHATSAPP_FROM }}
+        run: python ingestion/alert_check.py

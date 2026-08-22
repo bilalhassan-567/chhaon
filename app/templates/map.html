@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Chhaon &mdash; Live Map{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>#map { height: 480px; }</style>
+{% endblock %}
+
+{% block content %}
+<div class="mb-4 flex items-center justify-between">
+  <h1 class="text-xl font-semibold">Live Community Heat-Risk Map</h1>
+  <div id="heat-index" class="text-sm text-slate-600">Loading current heat index&hellip;</div>
+</div>
+
+<div id="map" class="rounded-lg border border-slate-300 shadow-sm"></div>
+
+<p class="mt-4 text-sm text-slate-500">
+  Zone circles scale with report density. Reports come in over WhatsApp; heat-index
+  data is live from Open-Meteo.
+  <a href="/gap" class="text-sky-700 underline">See the Gap Dashboard &rarr;</a>
+</p>
+
+<script>
+  const map = L.map('map').setView([31.5497, 74.3436], 11);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors',
+  }).addTo(map);
+
+  fetch('/api/heat-index')
+    .then((r) => r.json())
+    .then((d) => {
+      document.getElementById('heat-index').textContent =
+        `Current Lahore heat index (feels like): ${d.apparent_temperature_c}°C ` +
+        `(air temp ${d.temperature_c}°C, humidity ${d.relative_humidity_pct}%)`;
+    })
+    .catch(() => {
+      document.getElementById('heat-index').textContent = 'Heat index unavailable right now.';
+    });
+
+  fetch('/api/reports')
+    .then((r) => r.json())
+    .then((zones) => {
+      zones.forEach((z) => {
+        if (z.lat === null) return;
+        const radius = 300 + z.count * 250;
+        L.circle([z.lat, z.lon], {
+          radius,
+          color: '#b91c1c',
+          fillColor: '#ef4444',
+          fillOpacity: 0.35,
+        })
+          .addTo(map)
+          .bindPopup(`<strong>${z.zone_name}</strong><br>${z.count} report(s)`);
+      });
+    });
+</script>
+{% endblock %}

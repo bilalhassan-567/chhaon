@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}Chhaon{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  {% block head %}{% endblock %}
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col">
+  <header class="bg-slate-900 text-white">
+    <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+      <a href="/" class="text-lg font-semibold tracking-wide">CHHAON <span class="text-slate-400 font-normal">چھاؤں</span></a>
+      <nav class="flex gap-4 text-sm">
+        <a href="/" class="hover:underline">Map</a>
+        <a href="/gap" class="hover:underline">Gap Dashboard</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="bg-amber-100 border-b border-amber-300 text-amber-900 text-sm">
+    <div class="max-w-5xl mx-auto px-4 py-2">
+      &#9888; Community-reported signal &mdash; not a verified medical or legal record.
+      No names or exact addresses are ever collected.
+    </div>
+  </div>
+
+  <main class="flex-1 max-w-5xl mx-auto w-full px-4 py-6">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="text-center text-xs text-slate-400 py-4">
+    Chhaon &mdash; Smart City Hackathon Lahore 2026 &middot; City Intelligence
+  </footer>
+</body>
+</html>

@@ -1,0 +1,28 @@
+{
+  "_meta": {
+    "description": "Lahore neighbourhood/zone lookup for report intake and map shading. Centroids are approximate (general knowledge of Lahore's layout, not surveyed GIS data) — good enough for zone-bucket aggregation and nearest-zone matching at hackathon-demo scale. Refine with real boundaries from OpenStreetMap (see docs/submission for the City Intelligence catalogue's suggested open data sources) if precision ever matters beyond that.",
+    "source": "approximate, hand-compiled"
+  },
+  "zones": [
+    { "id": "walled_city", "name": "Walled City / Androon Lahore", "lat": 31.5820, "lon": 74.3300 },
+    { "id": "gulberg", "name": "Gulberg", "lat": 31.5085, "lon": 74.3505 },
+    { "id": "model_town", "name": "Model Town", "lat": 31.4805, "lon": 74.3232 },
+    { "id": "johar_town", "name": "Johar Town", "lat": 31.4697, "lon": 74.2728 },
+    { "id": "dha", "name": "DHA (Defence)", "lat": 31.4697, "lon": 74.4142 },
+    { "id": "township", "name": "Township", "lat": 31.4590, "lon": 74.2960 },
+    { "id": "iqbal_town", "name": "Iqbal Town", "lat": 31.4990, "lon": 74.2900 },
+    { "id": "shadman", "name": "Shadman", "lat": 31.5460, "lon": 74.3280 },
+    { "id": "garden_town", "name": "Garden Town", "lat": 31.4990, "lon": 74.3320 },
+    { "id": "faisal_town", "name": "Faisal Town", "lat": 31.4870, "lon": 74.3060 },
+    { "id": "cantt", "name": "Lahore Cantt", "lat": 31.5260, "lon": 74.3900 },
+    { "id": "samanabad", "name": "Samanabad", "lat": 31.5330, "lon": 74.3070 },
+    { "id": "mughalpura", "name": "Mughalpura", "lat": 31.5650, "lon": 74.3660 },
+    { "id": "shalimar", "name": "Shalimar", "lat": 31.5940, "lon": 74.3560 },
+    { "id": "baghbanpura", "name": "Baghbanpura", "lat": 31.5900, "lon": 74.3450 },
+    { "id": "allama_iqbal_town", "name": "Allama Iqbal Town", "lat": 31.5280, "lon": 74.2740 },
+    { "id": "green_town", "name": "Green Town", "lat": 31.4780, "lon": 74.2830 },
+    { "id": "kot_lakhpat", "name": "Kot Lakhpat", "lat": 31.4900, "lon": 74.3540 },
+    { "id": "thokar_niaz_baig", "name": "Thokar Niaz Baig", "lat": 31.4400, "lon": 74.2650 },
+    { "id": "ravi_town", "name": "Ravi Town", "lat": 31.6100, "lon": 74.3100 }
+  ]
+}

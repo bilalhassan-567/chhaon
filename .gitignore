@@ -1,0 +1,51 @@
+# ─── Private planning (never public) ───────────────────────
+# All hackathon strategy, the master build doc, locked decisions, and the
+# running progress log live here. Judges and repo visitors never see this.
+docs/master-workout/
+docs/submission/demo-video-script.md
+docs/submission/submission-checklist.md
+CLAUDE.md
+.claude/
+
+# ─── Secrets ────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+# Firebase service-account key, however it gets named/downloaded — never in the repo,
+# even if it's accidentally saved here instead of outside the project folder.
+*firebase*adminsdk*.json
+*serviceAccountKey*.json
+firebase-credentials*.json
+# Any other stray copy of env values, whatever it gets named (caught real leaked
+# secrets sitting in files like env.verify-token-update.txt on 22 Aug 2026 — this
+# pattern exists specifically because that happened once already).
+env.*.txt
+env-*.txt
+*.env.txt
+
+# ─── Python ─────────────────────────────────────────────────
+venv/
+.venv/
+**/__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+
+# ─── Local state / generated artifacts ─────────────────────
+data/*.sqlite*
+data/*.local.json
+logs/
+*.log
+uvicorn.out.log
+uvicorn.err.log
+.pytest_cache/
+
+# ─── Editor / OS ────────────────────────────────────────────
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# ─── Local scratch ──────────────────────────────────────────
+.scratch_pw/
+node_modules/

@@ -1,0 +1,22 @@
+rules_version = '2';
+
+// Deploy on Day 1/2, right after the Firebase project is created, BEFORE any real
+// data goes in:  firebase deploy --only firestore:rules
+//
+// Firestore's default "test mode" is `allow read, write: if true` for 30 days — wide
+// open to the entire internet, including report data and (once the alert-registration
+// backend is implemented) real phone numbers. That default is the single most common
+// way a Firestore project gets scraped or vandalized.
+//
+// Chhaon's architecture never needs a client rule to be permissive: every read and
+// write goes through the FastAPI backend using the Firebase Admin SDK (a service
+// account), which Security Rules don't apply to at all — rules only gate direct
+// access from a browser/mobile client, and nothing in this app talks to Firestore
+// that way. So the correct rule is simply: deny everyone, always.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
