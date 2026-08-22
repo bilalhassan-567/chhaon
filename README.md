@@ -83,6 +83,28 @@ temperature/heat-index data, GitHub Actions for scheduled alert checks, hosted o
 Render — every layer on a genuinely free tier, no payment card required anywhere in the
 stack.
 
+## Deployment
+
+Deploys to [Render](https://render.com)'s free Web Service tier via the included
+[`render.yaml`](render.yaml) blueprint:
+
+1. On [dashboard.render.com](https://dashboard.render.com), **New → Blueprint**, connect
+   the `bilalhassan-567/chhaon` GitHub repo. Render reads `render.yaml` automatically.
+2. It will ask for the env vars marked secret in the blueprint — paste each one from your
+   local `.env` (never from this repo): `FIREBASE_CREDENTIALS_JSON` (the service-account
+   key as one-line JSON — see below), `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_ACCESS_TOKEN`,
+   `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN`.
+3. `FIREBASE_CREDENTIALS_JSON` needs the *contents* of the service-account key file as a
+   single-line JSON string (Render has no persistent disk to point
+   `FIREBASE_CREDENTIALS_PATH` at) — minify it, e.g. in PowerShell:
+   `Get-Content path\to\key.json -Raw | ConvertFrom-Json | ConvertTo-Json -Compress`.
+4. Confirm plan is **Free** (already set in the blueprint) and deploy.
+5. Once live, take the Render URL and update it in two places: the Meta App Dashboard's
+   WhatsApp → Configuration → Webhook (`https://<your-app>.onrender.com/webhooks/whatsapp`,
+   same verify token as `WHATSAPP_VERIFY_TOKEN`), and re-subscribe to the `messages` field.
+6. Free-tier services spin down after 15 minutes idle and cold-start on the next request —
+   expected, not a bug; worth mentioning in the demo.
+
 ## Development notes
 
 Built with AI-assisted development tools as part of the solo build process. All product,

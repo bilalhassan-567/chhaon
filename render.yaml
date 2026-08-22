@@ -1,0 +1,35 @@
+services:
+  - type: web
+    name: chhaon
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.0
+      - key: STORAGE_BACKEND
+        value: firestore
+      # Secrets and identifiers below are intentionally left unset here (sync: false).
+      # Render will prompt for each one in the dashboard when the blueprint is applied —
+      # values come from your local .env, never from this file.
+      - key: FIREBASE_CREDENTIALS_JSON
+        sync: false
+      - key: WHATSAPP_PHONE_NUMBER_ID
+        sync: false
+      - key: WHATSAPP_ACCESS_TOKEN
+        sync: false
+      - key: WHATSAPP_APP_SECRET
+        sync: false
+      - key: WHATSAPP_VERIFY_TOKEN
+        sync: false
+      - key: WHATSAPP_API_VERSION
+        value: v21.0
+      - key: ALERT_HEAT_INDEX_THRESHOLD_C
+        value: "40"
+      - key: ALERT_COOLDOWN_HOURS
+        value: "6"
+      - key: INTAKE_RATE_LIMIT_MAX_MESSAGES
+        value: "20"
+      - key: INTAKE_RATE_LIMIT_WINDOW_MINUTES
+        value: "60"
