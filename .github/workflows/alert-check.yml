@@ -2,13 +2,13 @@ name: Heat Alert Threshold Check
 
 # Runs the outbound preventive-alert path (PLAN.md Day 6): checks the live heat index
 # for every zone with at least one registration, sends a WhatsApp warning through
-# Twilio if a zone crosses the danger threshold and isn't in cooldown.
+# Meta's WhatsApp Cloud API if a zone crosses the danger threshold and isn't in cooldown.
 #
-# Cannot run for real until the Firestore project and Twilio account exist (both are
-# outstanding — see docs/master-workout/PROGRESS.md) and the secrets below are set in
-# this repo's Settings > Secrets and variables > Actions. Until then this workflow is
-# here, correct, and inert — it will fail fast with a clear error rather than silently
-# no-op, since a silent no-op could hide a real misconfiguration once secrets exist.
+# Cannot run for real until the secrets below are set in this repo's Settings > Secrets
+# and variables > Actions (see docs/master-workout/PROGRESS.md). Until then this
+# workflow is here, correct, and inert — it will fail fast with a clear error rather
+# than silently no-op, since a silent no-op could hide a real misconfiguration once
+# secrets exist.
 
 on:
   schedule:
@@ -36,7 +36,6 @@ jobs:
         env:
           STORAGE_BACKEND: firestore
           FIREBASE_CREDENTIALS_JSON: ${{ secrets.FIREBASE_CREDENTIALS_JSON }}
-          TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
-          TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
-          TWILIO_WHATSAPP_FROM: ${{ secrets.TWILIO_WHATSAPP_FROM }}
+          WHATSAPP_ACCESS_TOKEN: ${{ secrets.WHATSAPP_ACCESS_TOKEN }}
+          WHATSAPP_PHONE_NUMBER_ID: ${{ secrets.WHATSAPP_PHONE_NUMBER_ID }}
         run: python ingestion/alert_check.py
