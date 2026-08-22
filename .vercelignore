@@ -1,0 +1,5 @@
+# Not needed inside the deployed function bundle — keeps it small and fast to cold-start.
+tests/
+docs/
+requirements-dev.txt
+pytest.ini

@@ -20,7 +20,7 @@ pin, duplicate-detection), alert registration/opt-out, and the outbound alert th
 checker are all built, tested (78 automated tests, including real integration tests
 against live Firestore), and wired up against real infrastructure: real Firestore, and
 Meta's WhatsApp Cloud API** (not Twilio — Twilio's trial isn't offered in Pakistan, see
-`docs/architecture.md`). The Render deployment itself hasn't happened yet.
+`docs/architecture.md`). The Vercel deployment itself hasn't happened yet.
 
 ## Setup & run
 
@@ -80,30 +80,40 @@ here.
 Python (FastAPI + Jinja2), Leaflet.js (CDN) for the map, Tailwind (CDN) for styling,
 Firebase Firestore for storage, Meta WhatsApp Cloud API for messaging, Open-Meteo for
 temperature/heat-index data, GitHub Actions for scheduled alert checks, hosted on
-Render — every layer on a genuinely free tier, no payment card required anywhere in the
+Vercel — every layer on a genuinely free tier, no payment card required anywhere in the
 stack.
 
 ## Deployment
 
-Deploys to [Render](https://render.com)'s free Web Service tier via the included
-[`render.yaml`](render.yaml) blueprint:
+Deploys to [Vercel](https://vercel.com)'s free Hobby plan (genuinely no card required —
+Render's Blueprint *and* plain Web Service flows both demanded card verification even on
+free services, which conflicts with this project's zero-cost rule, so Vercel is the
+actual deploy target). `vercel.json` and `.python-version` are already in the repo;
+Vercel auto-detects `app/main.py`'s `FastAPI` instance with zero restructuring needed.
 
-1. On [dashboard.render.com](https://dashboard.render.com), **New → Blueprint**, connect
-   the `bilalhassan-567/chhaon` GitHub repo. Render reads `render.yaml` automatically.
-2. It will ask for the env vars marked secret in the blueprint — paste each one from your
-   local `.env` (never from this repo): `FIREBASE_CREDENTIALS_JSON` (the service-account
-   key as one-line JSON — see below), `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_ACCESS_TOKEN`,
-   `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN`.
-3. `FIREBASE_CREDENTIALS_JSON` needs the *contents* of the service-account key file as a
-   single-line JSON string (Render has no persistent disk to point
-   `FIREBASE_CREDENTIALS_PATH` at) — minify it, e.g. in PowerShell:
-   `Get-Content path\to\key.json -Raw | ConvertFrom-Json | ConvertTo-Json -Compress`.
-4. Confirm plan is **Free** (already set in the blueprint) and deploy.
-5. Once live, take the Render URL and update it in two places: the Meta App Dashboard's
-   WhatsApp → Configuration → Webhook (`https://<your-app>.onrender.com/webhooks/whatsapp`,
-   same verify token as `WHATSAPP_VERIFY_TOKEN`), and re-subscribe to the `messages` field.
-6. Free-tier services spin down after 15 minutes idle and cold-start on the next request —
-   expected, not a bug; worth mentioning in the demo.
+1. On [vercel.com/new](https://vercel.com/new), import the `bilalhassan-567/chhaon`
+   GitHub repo.
+2. Framework preset: Vercel should auto-detect **Other** / Python from
+   `requirements.txt`. Leave build/output settings at their defaults.
+3. Add environment variables (**Project Settings → Environment Variables**), values from
+   your local `.env`, never from this repo: `STORAGE_BACKEND=firestore`,
+   `FIREBASE_CREDENTIALS_JSON` (the service-account key's contents as one-line JSON — no
+   persistent disk on Vercel either, so this is the only option, same as Render would
+   have needed; minify it in PowerShell:
+   `Get-Content path\to\key.json -Raw | ConvertFrom-Json | ConvertTo-Json -Compress`),
+   `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_APP_SECRET`,
+   `WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_API_VERSION=v21.0`, `ALERT_HEAT_INDEX_THRESHOLD_C=40`,
+   `ALERT_COOLDOWN_HOURS=6`, `INTAKE_RATE_LIMIT_MAX_MESSAGES=20`,
+   `INTAKE_RATE_LIMIT_WINDOW_MINUTES=60`.
+4. Deploy. Vercel gives a `*.vercel.app` URL immediately.
+5. Update the Meta App Dashboard's WhatsApp → Configuration → Webhook to
+   `https://<your-app>.vercel.app/webhooks/whatsapp`, same verify token as
+   `WHATSAPP_VERIFY_TOKEN`, then re-subscribe to the `messages` field.
+6. Vercel Functions use Fluid compute (kept warm under active traffic, not a hard sleep
+   like Render's free tier) but each deploy is still a fresh process — the guided
+   WhatsApp conversation's in-memory per-phone state and the intake rate limiter both
+   reset on a cold start, same known limitation this project already had on any
+   single-instance free host; not a regression introduced by this move.
 
 ## Development notes
 
