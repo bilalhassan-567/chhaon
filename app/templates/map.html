@@ -32,8 +32,9 @@
   </div>
   <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight">Live Community Heat-Risk Map</h1>
   <p class="mt-2 text-shade-100/85 max-w-xl text-sm md:text-base">
-    Reports come in over WhatsApp &mdash; no app, no login. Zone circles scale with
-    report density; heat-index data is live from Open-Meteo.
+    Reports come in over WhatsApp, or through a <a href="/report" class="underline font-semibold hover:text-heat-200">plain web form</a> &mdash;
+    no app, no login either way. Zone circles scale with report density; heat-index
+    data is live from Open-Meteo.
   </p>
 </section>
 
@@ -82,6 +83,24 @@
   </div>
 </section>
 
+<section class="mt-8 bg-white border border-slate-200 rounded-xl p-6 max-w-lg mx-auto text-center" id="push-widget">
+  <p class="text-2xl mb-1" aria-hidden="true">🔔</p>
+  <p class="font-semibold text-slate-800">Get a browser alert for your area</p>
+  <p class="text-xs text-slate-500 mt-1 mb-4">
+    A WhatsApp-independent alternative to WhatsApp opt-in alerts &mdash; works entirely
+    through this browser, no phone number needed.
+  </p>
+  <div class="flex flex-col sm:flex-row gap-2 justify-center items-center">
+    <select id="push-zone-select" class="border border-slate-300 rounded-lg px-3 py-2 text-sm w-full sm:w-auto">
+      <option value="">Loading zones&hellip;</option>
+    </select>
+    <button type="button" id="push-subscribe-btn" class="bg-shade-700 hover:bg-shade-800 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors whitespace-nowrap">
+      Enable alerts
+    </button>
+  </div>
+  <p id="push-status" class="text-xs mt-3 text-slate-500" aria-live="polite"></p>
+</section>
+
 <script>
   const map = L.map('map').setView([31.5497, 74.3436], 11);
   L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
@@ -120,7 +139,8 @@
           .addTo(map)
           .bindPopup(
             `<strong>${z.zone_name}</strong><br>` +
-            (z.real_count > 0 ? `${z.real_count} real report(s) via WhatsApp<br>` : '') +
+            (z.whatsapp_count > 0 ? `${z.whatsapp_count} report(s) via WhatsApp<br>` : '') +
+            (z.web_count > 0 ? `${z.web_count} report(s) via web form<br>` : '') +
             (z.demo_count > 0 ? `${z.demo_count} demo report(s) (seeded for reliability)` : '')
           );
       });
@@ -143,5 +163,71 @@
   // standard fix is to force a resize check shortly after load and on window resize.
   window.addEventListener('load', () => setTimeout(() => map.invalidateSize(), 200));
   window.addEventListener('resize', () => map.invalidateSize());
+
+  // --- Web Push opt-in (WhatsApp-independent alert channel) ---
+  const pushSelect = document.getElementById('push-zone-select');
+  const pushBtn = document.getElementById('push-subscribe-btn');
+  const pushStatus = document.getElementById('push-status');
+
+  fetch('/api/zones')
+    .then((r) => r.json())
+    .then((allZones) => {
+      pushSelect.innerHTML = allZones
+        .map((z) => `<option value="${z.zone_id}">${z.zone_name}</option>`)
+        .join('');
+    });
+
+  function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = atob(base64);
+    return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
+  }
+
+  pushBtn.addEventListener('click', async () => {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      pushStatus.textContent = "This browser doesn't support push notifications.";
+      return;
+    }
+    const zoneId = pushSelect.value;
+    if (!zoneId) {
+      pushStatus.textContent = 'Pick a zone first.';
+      return;
+    }
+
+    pushStatus.textContent = 'Requesting permission…';
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        pushStatus.textContent = 'Permission denied — alerts stay off until you allow notifications for this site.';
+        return;
+      }
+
+      const registration = await navigator.serviceWorker.register('/sw.js');
+      await navigator.serviceWorker.ready;
+
+      const { publicKey } = await fetch('/api/push/vapid-public-key').then((r) => r.json());
+      const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(publicKey),
+      });
+      const raw = subscription.toJSON();
+
+      await fetch('/api/push/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          endpoint: raw.endpoint,
+          p256dh: raw.keys.p256dh,
+          auth: raw.keys.auth,
+          zone_id: zoneId,
+        }),
+      });
+
+      pushStatus.textContent = 'Alerts enabled for this browser. You can close this tab — alerts still arrive.';
+    } catch (err) {
+      pushStatus.textContent = 'Could not enable alerts: ' + err.message;
+    }
+  });
 </script>
 {% endblock %}

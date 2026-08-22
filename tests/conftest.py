@@ -3,6 +3,7 @@ import pytest
 from app.services.whatsapp_flow import _conversations
 from app.storage.alert_state_store import LocalJSONAlertStateStore
 from app.storage.local_store import LocalJSONReportStore
+from app.storage.push_subscription_store import LocalJSONPushSubscriptionStore
 from app.storage.registration_store import LocalJSONRegistrationStore
 
 
@@ -36,6 +37,20 @@ def block_real_whatsapp_sends(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def block_real_web_push_sends(monkeypatch):
+    """Same reasoning as block_real_whatsapp_sends, for the Web Push channel: once
+    real VAPID keys are configured locally, tests must not attempt real pushes."""
+    sent = []
+
+    def fake_send_push_notification(subscription, title: str, body: str) -> bool:
+        sent.append({"endpoint": subscription.endpoint, "title": title, "body": body})
+        return True
+
+    monkeypatch.setattr("ingestion.alert_check.send_push_notification", fake_send_push_notification)
+    return sent
+
+
+@pytest.fixture(autouse=True)
 def isolate_whatsapp_secrets(monkeypatch):
     """Tests must not depend on whatever's actually in the developer's .env — once a
     real WHATSAPP_APP_SECRET is configured locally (as it now is), every test that
@@ -53,12 +68,13 @@ def isolate_whatsapp_secrets(monkeypatch):
 def report_store(tmp_path, monkeypatch):
     """An isolated LocalJSONReportStore backed by a tmp file, wired in wherever
     `get_store()` is called from — patched at the point of use (whatsapp_flow,
-    routes/api), not at the storage factory, since both modules imported the name
-    directly into their own namespace."""
+    routes/api, routes/report), not at the storage factory, since each module
+    imported the name directly into its own namespace."""
     store = LocalJSONReportStore(path=tmp_path / "reports.json")
     monkeypatch.setattr("app.services.whatsapp_flow.get_store", lambda: store)
     monkeypatch.setattr("app.routes.api.get_store", lambda: store)
     monkeypatch.setattr("app.routes.gap.get_store", lambda: store)
+    monkeypatch.setattr("app.routes.report.get_store", lambda: store)
     return store
 
 
@@ -74,3 +90,13 @@ def registration_store(tmp_path, monkeypatch):
 @pytest.fixture
 def alert_state_store(tmp_path):
     return LocalJSONAlertStateStore(path=tmp_path / "alert_state.json")
+
+
+@pytest.fixture
+def push_subscription_store(tmp_path, monkeypatch):
+    """Isolated PushSubscriptionStore, patched wherever get_push_subscription_store()
+    is called from (same "patch at point of use" reasoning as report_store)."""
+    store = LocalJSONPushSubscriptionStore(path=tmp_path / "push_subscriptions.json")
+    monkeypatch.setattr("app.routes.push.get_push_subscription_store", lambda: store)
+    monkeypatch.setattr("ingestion.alert_check.get_push_subscription_store", lambda: store)
+    return store

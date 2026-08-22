@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}Chhaon &mdash; Report a Heat Incident{% endblock %}
+
+{% block content %}
+<section class="mb-8 rounded-2xl bg-gradient-to-br from-heat-700 via-heat-600 to-shade-800 text-white p-8 shadow-xl animate-fadeInUp">
+  <p class="text-white/70 text-xs font-bold uppercase tracking-[0.2em] mb-3">Secondary channel &mdash; no WhatsApp needed</p>
+  <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight">Report a Heat Incident</h1>
+  <p class="mt-2 text-white/85 max-w-xl text-sm md:text-base">
+    The same anonymous report, same map, same Gap Dashboard &mdash; just through this
+    page instead of WhatsApp. Nothing to install, nothing to log into.
+  </p>
+</section>
+
+<form id="report-form" class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm max-w-lg mx-auto" novalidate>
+  <div class="mb-6">
+    <p class="font-semibold text-slate-800 mb-2">1. Where?</p>
+    <button type="button" id="btn-locate" class="w-full bg-shade-700 hover:bg-shade-800 text-white font-semibold py-2.5 rounded-lg transition-colors">
+      <span aria-hidden="true">📍</span> Share my location
+    </button>
+    <p id="location-status" class="text-xs text-slate-500 mt-2" aria-live="polite">Or type your neighbourhood below if you'd rather not share it.</p>
+    <input
+      type="text"
+      id="zone-name"
+      name="zone_name"
+      placeholder="e.g. Model Town, Gulberg, Walled City&hellip;"
+      class="mt-2 w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-shade-600"
+      autocomplete="off"
+    />
+  </div>
+
+  <div class="mb-6">
+    <p class="font-semibold text-slate-800 mb-2">2. What happened?</p>
+    <div class="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Incident type">
+      <label class="incident-option flex items-center gap-2 border border-slate-300 rounded-lg px-3 py-2 text-sm cursor-pointer has-[:checked]:border-heat-600 has-[:checked]:bg-heat-50">
+        <input type="radio" name="incident_type" value="heat_exhaustion" class="accent-heat-600" required />
+        Heat exhaustion
+      </label>
+      <label class="incident-option flex items-center gap-2 border border-slate-300 rounded-lg px-3 py-2 text-sm cursor-pointer has-[:checked]:border-heat-600 has-[:checked]:bg-heat-50">
+        <input type="radio" name="incident_type" value="heatstroke" class="accent-heat-600" />
+        Heatstroke
+      </label>
+      <label class="incident-option flex items-center gap-2 border border-slate-300 rounded-lg px-3 py-2 text-sm cursor-pointer has-[:checked]:border-heat-600 has-[:checked]:bg-heat-50">
+        <input type="radio" name="incident_type" value="death" class="accent-heat-600" />
+        Death
+      </label>
+      <label class="incident-option flex items-center gap-2 border border-slate-300 rounded-lg px-3 py-2 text-sm cursor-pointer has-[:checked]:border-heat-600 has-[:checked]:bg-heat-50">
+        <input type="radio" name="incident_type" value="other" class="accent-heat-600" />
+        Other concern
+      </label>
+    </div>
+  </div>
+
+  <button type="submit" class="w-full bg-heat-600 hover:bg-heat-700 text-white font-semibold py-3 rounded-lg transition-colors">
+    Submit anonymously
+  </button>
+  <p id="submit-status" class="text-sm mt-3 text-center" aria-live="polite"></p>
+</form>
+
+<p class="mt-6 text-sm text-slate-500 text-center">
+  No name, no phone number, no exact address is ever collected here &mdash; same
+  anonymous-by-design schema as the WhatsApp intake.
+  <a href="/" class="text-shade-700 font-medium underline">&larr; Back to the map</a>
+</p>
+
+<script>
+  let coords = null;
+
+  const locateBtn = document.getElementById('btn-locate');
+  const statusEl = document.getElementById('location-status');
+  const zoneInput = document.getElementById('zone-name');
+
+  locateBtn.addEventListener('click', () => {
+    if (!('geolocation' in navigator)) {
+      statusEl.textContent = 'Location isn\'t available in this browser — type your neighbourhood instead.';
+      return;
+    }
+    statusEl.textContent = 'Requesting location…';
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        coords = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+        statusEl.textContent = 'Location shared. You can still edit the neighbourhood field below if it looks wrong.';
+      },
+      () => {
+        coords = null;
+        statusEl.textContent = 'Location permission denied or unavailable — type your neighbourhood below instead.';
+      },
+      { timeout: 10000 }
+    );
+  });
+
+  document.getElementById('report-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const incidentType = document.querySelector('input[name="incident_type"]:checked');
+    const statusOut = document.getElementById('submit-status');
+
+    if (!incidentType) {
+      statusOut.textContent = 'Please choose what happened.';
+      statusOut.className = 'text-sm mt-3 text-center text-heat-700';
+      return;
+    }
+
+    const body = { incident_type: incidentType.value };
+    if (coords) {
+      body.lat = coords.lat;
+      body.lon = coords.lon;
+    } else if (zoneInput.value.trim()) {
+      body.zone_name = zoneInput.value.trim();
+    } else {
+      statusOut.textContent = 'Share your location or type a neighbourhood first.';
+      statusOut.className = 'text-sm mt-3 text-center text-heat-700';
+      return;
+    }
+
+    statusOut.textContent = 'Submitting…';
+    statusOut.className = 'text-sm mt-3 text-center text-slate-500';
+
+    try {
+      const res = await fetch('/api/report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Something went wrong.');
+      statusOut.textContent = `Reported for ${data.zone_name}. Thank you — this is now on the live map.`;
+      statusOut.className = 'text-sm mt-3 text-center text-shade-700 font-medium';
+      document.getElementById('report-form').reset();
+      coords = null;
+    } catch (err) {
+      statusOut.textContent = err.message;
+      statusOut.className = 'text-sm mt-3 text-center text-heat-700';
+    }
+  });
+</script>
+{% endblock %}

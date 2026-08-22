@@ -1,8 +1,9 @@
 name: Heat Alert Threshold Check
 
 # Runs the outbound preventive-alert path (PLAN.md Day 6): checks the live heat index
-# for every zone with at least one registration, sends a WhatsApp warning through
-# Meta's WhatsApp Cloud API if a zone crosses the danger threshold and isn't in cooldown.
+# for every zone with at least one registration, sends a warning through Meta's
+# WhatsApp Cloud API and/or Web Push (whichever channel(s) that zone has registrants
+# on) if a zone crosses the danger threshold and isn't in cooldown.
 #
 # Cannot run for real until the secrets below are set in this repo's Settings > Secrets
 # and variables > Actions (see docs/master-workout/PROGRESS.md). Until then this
@@ -38,4 +39,6 @@ jobs:
           FIREBASE_CREDENTIALS_JSON: ${{ secrets.FIREBASE_CREDENTIALS_JSON }}
           WHATSAPP_ACCESS_TOKEN: ${{ secrets.WHATSAPP_ACCESS_TOKEN }}
           WHATSAPP_PHONE_NUMBER_ID: ${{ secrets.WHATSAPP_PHONE_NUMBER_ID }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          VAPID_CLAIMS_EMAIL: ${{ secrets.VAPID_CLAIMS_EMAIL }}
         run: python ingestion/alert_check.py

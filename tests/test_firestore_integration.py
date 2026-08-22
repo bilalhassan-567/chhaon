@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 import pytest
 
 from app.config import FIREBASE_CREDENTIALS_JSON, FIREBASE_CREDENTIALS_PATH
-from app.models import GeoSource, IncidentType, NewReport
+from app.models import GeoSource, IncidentType, NewReport, PushSubscription
 
 pytestmark = pytest.mark.skipif(
     not (FIREBASE_CREDENTIALS_PATH or FIREBASE_CREDENTIALS_JSON),
@@ -53,6 +53,14 @@ def alert_state_store():
     from app.storage.alert_state_store import FirestoreAlertStateStore
 
     store = FirestoreAlertStateStore()
+    yield store
+
+
+@pytest.fixture
+def push_subscription_store():
+    from app.storage.push_subscription_store import FirestorePushSubscriptionStore
+
+    store = FirestorePushSubscriptionStore()
     yield store
 
 
@@ -114,3 +122,18 @@ def test_alert_state_store_round_trip(alert_state_store, test_zone_id):
         assert abs((retrieved - now).total_seconds()) < 5
     finally:
         alert_state_store.collection.document(test_zone_id).delete()
+
+
+def test_push_subscription_store_round_trip(push_subscription_store, test_zone_id):
+    endpoint = f"https://_test_endpoint_{test_zone_id}"
+    push_subscription_store.subscribe(
+        PushSubscription(endpoint=endpoint, p256dh="test_p256dh", auth="test_auth", zone_id=test_zone_id)
+    )
+    try:
+        subs = push_subscription_store.list_for_zone(test_zone_id)
+        assert len(subs) == 1
+        assert subs[0].endpoint == endpoint
+        assert test_zone_id in push_subscription_store.zones_with_subscriptions()
+    finally:
+        push_subscription_store.unsubscribe(endpoint)
+    assert push_subscription_store.list_for_zone(test_zone_id) == []

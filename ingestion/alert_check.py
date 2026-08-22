@@ -4,12 +4,20 @@ Intended to run on a schedule via .github/workflows/alert-check.yml, but works
 standalone against the local JSON store for manual testing:
 
     python ingestion/alert_check.py --dry-run   # logs what it would send, sends nothing
-    python ingestion/alert_check.py              # sends real WhatsApp messages (needs
-                                                   # real Meta WhatsApp credentials in .env)
+    python ingestion/alert_check.py              # sends real alerts (needs real
+                                                   # WhatsApp and/or VAPID credentials
+                                                   # in .env, whichever channel has
+                                                   # registered recipients)
 
-Only checks zones that have at least one alert registration — most of Lahore's zones
-will have none, so this avoids burning Open-Meteo calls (and, more importantly, avoids
-ever constructing a message for a zone with nobody to send it to).
+Only checks zones that have at least one registration on *either* channel (WhatsApp
+phone registration or Web Push subscription) — most of Lahore's zones will have none,
+so this avoids burning Open-Meteo calls and constructing a message nobody receives.
+
+Two independent, additive channels: a zone crossing the threshold alerts everyone
+registered for it via WhatsApp *and* everyone subscribed via the web push widget —
+whichever they opted into. One shared per-zone cooldown across both channels (not
+per-channel), so a zone that stays above threshold doesn't re-alert anyone within
+ALERT_COOLDOWN_HOURS regardless of which channel they're on.
 """
 
 import sys
@@ -21,13 +29,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from app.config import (  # noqa: E402
     ALERT_COOLDOWN_HOURS,
     ALERT_HEAT_INDEX_THRESHOLD_C,
+    VAPID_PRIVATE_KEY,
     WHATSAPP_ACCESS_TOKEN,
     WHATSAPP_PHONE_NUMBER_ID,
 )
 from app.services.open_meteo import fetch_current_heat_index  # noqa: E402
+from app.services.web_push import send_push_notification  # noqa: E402
 from app.services.whatsapp_api import send_message  # noqa: E402
 from app.services.zones import load_zones  # noqa: E402
-from app.storage import get_alert_state_store, get_registration_store  # noqa: E402
+from app.storage import get_alert_state_store, get_push_subscription_store, get_registration_store  # noqa: E402
 
 
 def mask_phone(phone: str) -> str:
@@ -56,23 +66,40 @@ def send_whatsapp_alert(phone: str, message: str) -> bool:
         return False
 
 
-def run(dry_run: bool = False) -> None:
-    if not dry_run and not (WHATSAPP_ACCESS_TOKEN and WHATSAPP_PHONE_NUMBER_ID):
-        raise RuntimeError(
-            "Meta WhatsApp credentials are not configured (WHATSAPP_ACCESS_TOKEN / "
-            "WHATSAPP_PHONE_NUMBER_ID) — cannot send real alerts. Set them in .env "
-            "locally or as GitHub Actions secrets in CI, or pass --dry-run to test "
-            "the threshold logic without sending anything."
-        )
+def send_push_alert(subscription, zone_name: str, message: str) -> bool:
+    try:
+        return send_push_notification(subscription, title=f"Chhaon heat warning — {zone_name}", body=message)
+    except Exception as exc:  # one stale/revoked subscription must not stop the batch
+        print(f"  failed to push-alert a subscription: {exc}")
+        return False
 
+
+def run(dry_run: bool = False) -> None:
     registration_store = get_registration_store()
+    push_store = get_push_subscription_store()
     alert_state_store = get_alert_state_store()
     zones_by_id = {z.id: z for z in load_zones()}
 
-    target_zone_ids = registration_store.zones_with_registrations()
+    whatsapp_zone_ids = registration_store.zones_with_registrations()
+    push_zone_ids = push_store.zones_with_subscriptions()
+    target_zone_ids = whatsapp_zone_ids | push_zone_ids
+
     if not target_zone_ids:
         print("No zones have any alert registrations — nothing to check.")
         return
+
+    if not dry_run:
+        if whatsapp_zone_ids and not (WHATSAPP_ACCESS_TOKEN and WHATSAPP_PHONE_NUMBER_ID):
+            raise RuntimeError(
+                "Zones have WhatsApp registrations but WHATSAPP_ACCESS_TOKEN / "
+                "WHATSAPP_PHONE_NUMBER_ID aren't configured — set them in .env locally "
+                "or as GitHub Actions secrets in CI, or pass --dry-run."
+            )
+        if push_zone_ids and not VAPID_PRIVATE_KEY:
+            raise RuntimeError(
+                "Zones have Web Push subscriptions but VAPID_PRIVATE_KEY isn't "
+                "configured — run scripts/generate_vapid_keys.py, or pass --dry-run."
+            )
 
     now = datetime.now(timezone.utc)
     for zone_id in sorted(target_zone_ids):
@@ -93,21 +120,27 @@ def run(dry_run: bool = False) -> None:
                 continue
 
         phones = registration_store.list_for_zone(zone_id)
+        subscriptions = push_store.list_for_zone(zone_id)
         message = build_alert_message(zone.name, reading.apparent_temperature_c)
         print(
             f"{zone.name}: {reading.apparent_temperature_c:.1f}°C >= "
             f"{ALERT_HEAT_INDEX_THRESHOLD_C}°C threshold — alerting {len(phones)} "
-            "registered number(s)."
+            f"WhatsApp number(s) and {len(subscriptions)} browser subscription(s)."
         )
 
         if dry_run:
             for phone in phones:
-                print(f"  [dry run] would alert {mask_phone(phone)}")
+                print(f"  [dry run] would WhatsApp-alert {mask_phone(phone)}")
+            for _ in subscriptions:
+                print("  [dry run] would push-alert a browser subscription")
             continue  # dry run must have zero side effects — no cooldown state written
 
         sent_any = False
         for phone in phones:
             if send_whatsapp_alert(phone, message):
+                sent_any = True
+        for subscription in subscriptions:
+            if send_push_alert(subscription, zone.name, message):
                 sent_any = True
 
         if sent_any:

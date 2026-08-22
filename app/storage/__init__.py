@@ -3,6 +3,7 @@ from functools import lru_cache
 from app.config import STORAGE_BACKEND
 from app.storage.alert_state_store import AlertStateStore
 from app.storage.base import ReportStore
+from app.storage.push_subscription_store import PushSubscriptionStore
 from app.storage.registration_store import RegistrationStore
 
 
@@ -40,3 +41,15 @@ def get_alert_state_store() -> AlertStateStore:
     from app.storage.alert_state_store import LocalJSONAlertStateStore
 
     return LocalJSONAlertStateStore()
+
+
+@lru_cache
+def get_push_subscription_store() -> PushSubscriptionStore:
+    if STORAGE_BACKEND == "firestore":
+        from app.storage.push_subscription_store import FirestorePushSubscriptionStore
+
+        return FirestorePushSubscriptionStore()
+
+    from app.storage.push_subscription_store import LocalJSONPushSubscriptionStore
+
+    return LocalJSONPushSubscriptionStore()

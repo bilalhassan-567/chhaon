@@ -48,3 +48,17 @@ class AlertRegistration(BaseModel):
     phone: str
     zone_id: str
     registered_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class PushSubscription(BaseModel):
+    """A browser's Web Push subscription (RFC 8292), the WhatsApp-independent analog
+    of AlertRegistration. Unlike a phone number, this can't be used to register
+    someone else without their consent — the endpoint/keys are issued by the
+    browser's own push service only to the page that requested them, so there's no
+    open-form abuse vector to guard against the way there is for phone numbers."""
+
+    endpoint: str
+    p256dh: str
+    auth: str
+    zone_id: str
+    registered_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

@@ -15,16 +15,19 @@ In 2022, at 50°C across Punjab province — home to roughly 120 million people 
 heat-related deaths were officially recorded (Amnesty International, "Uncounted," May
 2025; full source list in [`docs/sources.md`](docs/sources.md)). Chhaon gives anyone —
 hospital worker, ambulance crew, community volunteer, ordinary citizen — a one-message
-WhatsApp channel to log a suspected heat-related illness, no app or login required.
-Reports aggregate onto a live map, get correlated against real temperature data, and are
-shown next to whatever official figures exist for the same period, making a documented
-data gap visible instead of leaving it in expert reports nobody outside the field reads.
+WhatsApp channel to log a suspected heat-related illness, no app or login required, plus
+a plain [web form](https://chhaon-six.vercel.app/report) as a second, independent way in
+if WhatsApp isn't available. Reports aggregate onto a live map, get correlated against
+real temperature data, and are shown next to whatever official figures exist for the
+same period, making a documented data gap visible instead of leaving it in expert
+reports nobody outside the field reads.
 
 ## Status
 
 **Live map, Gap Dashboard, WhatsApp report intake (guided flow, geo-tagging via location
-pin, duplicate-detection), alert registration/opt-out, and the outbound alert threshold
-checker are all built, tested (83 automated tests, including real integration tests
+pin, duplicate-detection), a WhatsApp-independent web report form and Web Push alert
+channel, alert registration/opt-out on both channels, and the outbound alert threshold
+checker are all built, tested (103 automated tests, including real integration tests
 against live Firestore), deployed, and wired up against real infrastructure: real
 Firestore, and Meta's WhatsApp Cloud API** (not Twilio — Twilio's trial isn't offered in
 Pakistan, see `docs/architecture.md`). Deployed on Vercel — see
@@ -59,17 +62,26 @@ Register for alerts, or send a report, entirely through the same webhook — rep
 opt out. Try the threshold checker without sending anything real: `python
 ingestion/alert_check.py --dry-run`.
 
+Try the WhatsApp-independent path instead: visit `/report` for the web form, or
+generate a real VAPID keypair (`python scripts/generate_vapid_keys.py --write-env` —
+self-generated, no external account needed) and use the "Get a browser alert for your
+area" widget on the map page to subscribe to Web Push alerts.
+
 ## How it works
 
 - **WhatsApp incident reporting** — no separate app, no login, works on any phone that
   already has WhatsApp.
+- **Web report form** — the same anonymous intake, reachable without WhatsApp at all;
+  auto-detects location via the browser, same zone-name fallback as the WhatsApp flow.
 - **Live community heat-risk map** — reports aggregated by neighbourhood, overlaid on
   real current/forecast heat-index data.
 - **Official-vs-Reported Gap View** — the core feature: an honest, running comparison
   between community-reported signal and whatever official figures exist for the same
   period.
-- **Preventive alerts** — the same WhatsApp channel in reverse: plain-language warnings
-  to registered at-risk households/workers when a zone's heat index crosses a threshold.
+- **Preventive alerts, two independent channels** — plain-language warnings to
+  registered at-risk households/workers when a zone's heat index crosses a threshold,
+  sent over WhatsApp *and* Web Push (browser notifications) — whichever a resident
+  opted into. Neither channel depends on the other being available.
 
 See [`docs/architecture.md`](docs/architecture.md) for the full system design, including
 its [Security section](docs/architecture.md#security) — webhook signature verification,
@@ -112,7 +124,9 @@ Vercel auto-detects `app/main.py`'s `FastAPI` instance with zero restructuring n
    `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_APP_SECRET`,
    `WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_API_VERSION=v21.0`, `ALERT_HEAT_INDEX_THRESHOLD_C=40`,
    `ALERT_COOLDOWN_HOURS=6`, `INTAKE_RATE_LIMIT_MAX_MESSAGES=20`,
-   `INTAKE_RATE_LIMIT_WINDOW_MINUTES=60`.
+   `INTAKE_RATE_LIMIT_WINDOW_MINUTES=60`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`,
+   `VAPID_CLAIMS_EMAIL` (from `python scripts/generate_vapid_keys.py` — no external
+   account, just copy the generated values).
 4. Deploy. Vercel gives a `*.vercel.app` URL immediately.
 5. Update the Meta App Dashboard's WhatsApp → Configuration → Webhook to
    `https://<your-app>.vercel.app/webhooks/whatsapp`, same verify token as

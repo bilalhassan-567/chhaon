@@ -57,3 +57,23 @@ FIREBASE_CREDENTIALS_PATH = os.getenv("FIREBASE_CREDENTIALS_PATH", "")
 # single-line string secret (GitHub Actions can't easily mount a key file). If set,
 # takes precedence over FIREBASE_CREDENTIALS_PATH.
 FIREBASE_CREDENTIALS_JSON = os.getenv("FIREBASE_CREDENTIALS_JSON", "")
+
+# Web Push (RFC 8292 VAPID) — a secondary, WhatsApp-independent channel: citizens can
+# report via a plain web form (app/routes/report.py) and opt into browser push alerts
+# (app/routes/push.py) instead of/alongside WhatsApp. Unlike every other credential in
+# this project, these have no external account behind them — generate with
+# scripts/generate_vapid_keys.py, a self-contained EC keypair, no signup, no card.
+VAPID_PUBLIC_KEY = os.getenv("VAPID_PUBLIC_KEY", "")
+VAPID_PRIVATE_KEY = os.getenv("VAPID_PRIVATE_KEY", "")
+# The "mailto:" contact VAPID's spec requires — push services use it to reach you if
+# your server misbehaves (e.g. spamming a user). Not a secret.
+VAPID_CLAIMS_EMAIL = os.getenv("VAPID_CLAIMS_EMAIL", "mailto:example@example.com")
+
+LOCAL_PUSH_SUBSCRIPTIONS_FILE = DATA_DIR / "push_subscriptions.local.json"
+
+# Rate limit on the web report form, per submitting IP address — a WhatsApp message
+# has some inherent friction (you need a WhatsApp account); an open web form has less,
+# so this needs its own limit rather than assuming WhatsApp's is enough. Same
+# per-key sliding-window limiter as the WhatsApp webhook (app/services/rate_limit.py).
+WEB_REPORT_RATE_LIMIT_MAX_MESSAGES = int(os.getenv("WEB_REPORT_RATE_LIMIT_MAX_MESSAGES", "20"))
+WEB_REPORT_RATE_LIMIT_WINDOW_MINUTES = int(os.getenv("WEB_REPORT_RATE_LIMIT_WINDOW_MINUTES", "60"))
