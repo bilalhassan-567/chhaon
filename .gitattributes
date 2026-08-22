@@ -1,0 +1,10 @@
+# Normalize line endings to LF in the repository regardless of what OS commits from —
+# avoids the "LF will be replaced by CRLF" warning on every Windows commit and keeps
+# diffs clean if this is ever cloned/edited cross-platform.
+* text=auto eol=lf
+
+# Binary assets — never touch line endings.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary

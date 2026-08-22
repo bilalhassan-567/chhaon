@@ -1,8 +1,15 @@
 # Chhaon (چھاؤں — "Shade")
 
+[![Live on Vercel](https://img.shields.io/badge/live-chhaon--six.vercel.app-0d9488?style=flat-square)](https://chhaon-six.vercel.app)
+[![License: MIT](https://img.shields.io/badge/license-MIT-slategray?style=flat-square)](LICENSE)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue?style=flat-square)](.python-version)
+
 A community heat-injury reporting and preparedness platform for Lahore, built for the
 [Smart City Hackathon Lahore 2026](https://smart-city-hackathon-lahore.devpost.com/)
 (Track: City Intelligence).
+
+**Live at [chhaon-six.vercel.app](https://chhaon-six.vercel.app)** — the map and Gap
+Dashboard are real and running, not mockups.
 
 In 2022, at 50°C across Punjab province — home to roughly 120 million people — **zero**
 heat-related deaths were officially recorded (Amnesty International, "Uncounted," May
@@ -17,10 +24,11 @@ data gap visible instead of leaving it in expert reports nobody outside the fiel
 
 **Live map, Gap Dashboard, WhatsApp report intake (guided flow, geo-tagging via location
 pin, duplicate-detection), alert registration/opt-out, and the outbound alert threshold
-checker are all built, tested (78 automated tests, including real integration tests
-against live Firestore), and wired up against real infrastructure: real Firestore, and
-Meta's WhatsApp Cloud API** (not Twilio — Twilio's trial isn't offered in Pakistan, see
-`docs/architecture.md`). The Vercel deployment itself hasn't happened yet.
+checker are all built, tested (83 automated tests, including real integration tests
+against live Firestore), deployed, and wired up against real infrastructure: real
+Firestore, and Meta's WhatsApp Cloud API** (not Twilio — Twilio's trial isn't offered in
+Pakistan, see `docs/architecture.md`). Deployed on Vercel — see
+[Deployment](#deployment) below for why, not Render.
 
 ## Setup & run
 
@@ -122,4 +130,4 @@ design, and data decisions are the author's own.
 
 ## License
 
-TBD.
+[MIT](LICENSE) &mdash; see the LICENSE file.
