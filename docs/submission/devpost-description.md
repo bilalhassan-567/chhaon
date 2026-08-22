@@ -1,6 +1,7 @@
 # Devpost Project Description — draft
 
-Status: **skeleton**, to be filled in as the build progresses (Day 9 per
+Status: **draft content filled in**, deployed and working as of this writing — still
+needs a final pass once the demo video and live screenshots exist (Day 9/10 per
 `master-workout/PLAN.md`). Structure below maps directly to what Devpost asks for.
 
 ---
@@ -35,21 +36,44 @@ submission — who's most exposed, why current data misses them.)*
 
 ## How we built it
 
-*(Fill in once the build is further along — see `architecture.md` for the current
-component breakdown and stack.)*
+A Python FastAPI backend with server-rendered Jinja2 templates, Leaflet.js for the map,
+and Tailwind for styling — deliberately no frontend build step. Reports arrive through
+Meta's WhatsApp Cloud API webhook, get geo-tagged via a shared location pin (or a typed
+neighbourhood as fallback), and are deduplicated automatically when a matching report
+lands in the same zone within a short time window, before landing in Firebase Firestore.
+A GitHub Actions cron job checks live Open-Meteo heat-index data against registered
+zones and sends preventive WhatsApp warnings when a threshold is crossed. The whole
+stack runs on genuinely free tiers, deployed on Vercel. See `architecture.md` for the
+full component breakdown.
 
 ## Challenges we ran into
 
-*(Fill in during/after build.)*
+Two real infrastructure pivots, both forced by regional/platform constraints rather than
+a design change: Twilio's WhatsApp Sandbox trial isn't offered for accounts signing up
+from Pakistan, so the entire messaging layer — webhook signature verification, message
+parsing, outbound sends — was rebuilt against Meta's WhatsApp Cloud API directly.
+Separately, Render's free tier turned out to require credit card verification for both
+its Blueprint and plain Web Service deploy flows despite advertising a card-free tier,
+so deployment moved to Vercel instead, which needed the app restructured for a
+serverless execution model rather than a long-running process.
 
 ## Accomplishments we're proud of
 
-*(Fill in — likely candidates: the gap dashboard framing, zero-cost stack discipline,
-solo build under a hard deadline.)*
+The Gap Dashboard leading with a direct, single-glance comparison: zero heat deaths
+officially recorded in Punjab during 2022's 50°C heatwave, next to Chhaon's own live
+count, sourced and cited rather than asserted. Also: real duplicate-detection working
+end-to-end (not just designed) — two reports from the same neighbourhood within a short
+window merge into one record instead of double-counting — and keeping every demo/seed
+data point honestly distinguishable from real WhatsApp reports everywhere it's shown,
+rather than quietly blending the two to make the map look busier.
 
 ## What we learned
 
-*(Fill in.)*
+How much of "making a data gap visible" is a data-honesty problem before it's a
+data-visualization problem — the hardest design decisions here weren't chart choices,
+they were about what *not* to claim (never presenting the official-figures panel as a
+live feed, never blending seeded demo reports into the real WhatsApp count, being
+explicit that this is a community-reported signal and not a medical or legal record).
 
 ## What's next
 
@@ -64,8 +88,8 @@ both) is documented as national, not local.
 
 ## Built with
 
-FastAPI, Jinja2, Leaflet.js, Tailwind CDN, Firebase Firestore, Twilio WhatsApp API,
-Open-Meteo API, GitHub Actions, Render.
+FastAPI, Jinja2, Leaflet.js, Tailwind CDN, Firebase Firestore, Meta WhatsApp Cloud API,
+Open-Meteo API, GitHub Actions, Vercel.
 
 ## Submission category
 
