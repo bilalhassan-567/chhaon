@@ -21,6 +21,12 @@ def gap_view(request: Request):
     for r in reports:
         by_incident_type[r.incident_type.value] += r.report_count
 
+    official_figures = load_official_figures()
+    # The single starkest documented figure (0 officially recorded, 2022, 50°C, ~120M
+    # people) — pulled by id rather than duplicating its text, so the headline banner
+    # can never drift from docs/sources.md's one source of truth.
+    headline_figure = next(f for f in official_figures if f.id == "punjab_2022")
+
     return templates.TemplateResponse(
         request,
         "gap.html",
@@ -30,6 +36,7 @@ def gap_view(request: Request):
             "demo_reports": demo_reports,
             "zones_reporting": len({r.zone_id for r in reports}),
             "by_incident_type": dict(by_incident_type),
-            "official_figures": load_official_figures(),
+            "official_figures": official_figures,
+            "headline_figure": headline_figure,
         },
     )

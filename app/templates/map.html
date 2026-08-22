@@ -6,48 +6,76 @@
 <style>
   #map { height: 480px; }
   .leaflet-popup-content-wrapper { border-radius: 0.5rem; }
+  .leaflet-bar a { border-radius: 0.375rem !important; }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="mb-5">
-  <h1 class="text-2xl font-bold text-slate-900">Live Community Heat-Risk Map</h1>
-  <p class="text-sm text-slate-500 mt-1">
+<section class="mb-6 rounded-2xl overflow-hidden bg-gradient-to-br from-shade-900 via-shade-800 to-heat-700 text-white p-8 shadow-xl animate-fadeInUp">
+  <div class="inline-flex items-center gap-2 bg-white/10 backdrop-blur px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide mb-4">
+    <span class="relative flex h-2 w-2">
+      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-heat-300 opacity-75"></span>
+      <span class="relative inline-flex rounded-full h-2 w-2 bg-heat-400"></span>
+    </span>
+    Live
+  </div>
+  <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight">Live Community Heat-Risk Map</h1>
+  <p class="mt-2 text-shade-100/85 max-w-xl text-sm md:text-base">
     Reports come in over WhatsApp &mdash; no app, no login. Zone circles scale with
     report density; heat-index data is live from Open-Meteo.
   </p>
+</section>
+
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+  <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow animate-fadeInUp fade-1">
+    <p class="text-xs uppercase tracking-wide text-slate-400 font-semibold flex items-center gap-1">🌡️ Feels like</p>
+    <p id="stat-apparent" class="text-2xl md:text-3xl font-extrabold text-heat-600 mt-1 tabular-nums">&hellip;</p>
+  </div>
+  <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow animate-fadeInUp fade-2">
+    <p class="text-xs uppercase tracking-wide text-slate-400 font-semibold flex items-center gap-1">💧 Air temp / humidity</p>
+    <p id="stat-air" class="text-2xl md:text-3xl font-extrabold text-slate-700 mt-1 tabular-nums">&hellip;</p>
+  </div>
+  <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow animate-fadeInUp fade-3">
+    <p class="text-xs uppercase tracking-wide text-slate-400 font-semibold flex items-center gap-1">📍 Zones reporting</p>
+    <p id="stat-zones" class="text-2xl md:text-3xl font-extrabold text-shade-700 mt-1 tabular-nums">&hellip;</p>
+  </div>
 </div>
 
-<div class="grid grid-cols-3 gap-3 mb-4">
-  <div class="bg-white border border-slate-200 rounded-lg p-3 shadow-sm">
-    <p class="text-xs uppercase tracking-wide text-slate-400 font-medium">Feels like</p>
-    <p id="stat-apparent" class="text-2xl font-bold text-heat-600 mt-1">&hellip;</p>
-  </div>
-  <div class="bg-white border border-slate-200 rounded-lg p-3 shadow-sm">
-    <p class="text-xs uppercase tracking-wide text-slate-400 font-medium">Air temp / humidity</p>
-    <p id="stat-air" class="text-2xl font-bold text-slate-700 mt-1">&hellip;</p>
-  </div>
-  <div class="bg-white border border-slate-200 rounded-lg p-3 shadow-sm">
-    <p class="text-xs uppercase tracking-wide text-slate-400 font-medium">Zones reporting</p>
-    <p id="stat-zones" class="text-2xl font-bold text-shade-700 mt-1">&hellip;</p>
-  </div>
-</div>
+<div id="map" class="rounded-xl border border-slate-300 shadow-md"></div>
 
-<div id="map" class="rounded-lg border border-slate-300 shadow-sm"></div>
-
-<div class="mt-3 flex items-center gap-4 text-xs text-slate-500">
-  <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded-full" style="background:#ef4444;opacity:.6"></span> Real WhatsApp reports</span>
-  <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded-full" style="background:#f59e0b;opacity:.6"></span> Demo reports (seeded for reliability during judging)</span>
+<div class="mt-3 flex flex-wrap items-center gap-4 text-xs text-slate-500">
+  <span class="flex items-center gap-1.5"><span class="inline-block w-3 h-3 rounded-full" style="background:#ef4444;opacity:.6"></span> Real WhatsApp reports</span>
+  <span class="flex items-center gap-1.5"><span class="inline-block w-3 h-3 rounded-full" style="background:#f59e0b;opacity:.6"></span> Demo reports (seeded for reliability during judging)</span>
 </div>
 
 <p class="mt-4 text-sm text-slate-500">
   <a href="/gap" class="text-shade-700 font-medium underline">See the Gap Dashboard &rarr;</a>
 </p>
 
+<section class="mt-10 grid md:grid-cols-3 gap-4">
+  <div class="bg-white border border-slate-200 rounded-xl p-5 text-center">
+    <div class="w-10 h-10 mx-auto rounded-full bg-heat-100 text-heat-700 font-bold flex items-center justify-center mb-3">1</div>
+    <p class="font-semibold text-slate-800 text-sm">Message on WhatsApp</p>
+    <p class="text-xs text-slate-500 mt-1">Share a location pin, or just type your neighbourhood &mdash; no app to install, no account.</p>
+  </div>
+  <div class="bg-white border border-slate-200 rounded-xl p-5 text-center">
+    <div class="w-10 h-10 mx-auto rounded-full bg-heat-100 text-heat-700 font-bold flex items-center justify-center mb-3">2</div>
+    <p class="font-semibold text-slate-800 text-sm">Pick what happened</p>
+    <p class="text-xs text-slate-500 mt-1">A short reply menu: heat exhaustion, heatstroke, or another heat-related concern.</p>
+  </div>
+  <div class="bg-white border border-slate-200 rounded-xl p-5 text-center">
+    <div class="w-10 h-10 mx-auto rounded-full bg-shade-100 text-shade-700 font-bold flex items-center justify-center mb-3">3</div>
+    <p class="font-semibold text-slate-800 text-sm">It's on the map, anonymously</p>
+    <p class="text-xs text-slate-500 mt-1">Zone, incident type, and timestamp only &mdash; duplicate reports nearby merge automatically.</p>
+  </div>
+</section>
+
 <script>
   const map = L.map('map').setView([31.5497, 74.3436], 11);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap contributors',
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; <a href="https://carto.com/attributions">CARTO</a> &copy; OpenStreetMap contributors',
+    subdomains: 'abcd',
+    maxZoom: 19,
   }).addTo(map);
 
   fetch('/api/heat-index')

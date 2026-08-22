@@ -9,32 +9,46 @@
   <meta property="og:description" content="Community heat-injury reporting and preparedness for Lahore. No app, no login — just WhatsApp." />
   <meta property="og:type" content="website" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%B3%3C/text%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
       theme: {
         extend: {
+          fontFamily: { sans: ['Manrope', 'ui-sans-serif', 'system-ui', 'sans-serif'] },
           colors: {
-            shade: { 50: '#f0fdfa', 100: '#ccfbf1', 600: '#0d9488', 700: '#0f766e', 900: '#134e4a' },
-            heat: { 50: '#fff7ed', 100: '#ffedd5', 500: '#f97316', 600: '#ea580c', 700: '#c2410c' },
+            shade: { 50: '#f0fdfa', 100: '#ccfbf1', 200: '#99f6e4', 300: '#5eead4', 400: '#2dd4bf', 600: '#0d9488', 700: '#0f766e', 800: '#115e59', 900: '#134e4a' },
+            heat: { 50: '#fff7ed', 100: '#ffedd5', 300: '#fdba74', 400: '#fb923c', 500: '#f97316', 600: '#ea580c', 700: '#c2410c' },
           },
+          keyframes: {
+            fadeInUp: { '0%': { opacity: 0, transform: 'translateY(12px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } },
+          },
+          animation: { fadeInUp: 'fadeInUp .6s ease-out both' },
         },
       },
     };
   </script>
+  <style>
+    body { font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif; }
+    .fade-1 { animation-delay: .05s }
+    .fade-2 { animation-delay: .15s }
+    .fade-3 { animation-delay: .25s }
+  </style>
   {% block head %}{% endblock %}
 </head>
 <body class="bg-shade-50 text-slate-900 min-h-screen flex flex-col">
-  <header class="bg-gradient-to-r from-shade-900 to-slate-900 text-white">
+  <header class="bg-gradient-to-r from-shade-900 via-slate-900 to-slate-900 text-white sticky top-0 z-20 shadow-lg">
     <div class="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between flex-wrap gap-2">
       <a href="/" class="flex items-baseline gap-2">
-        <span class="text-xl font-bold tracking-wide">🌳 CHHAON</span>
-        <span class="text-shade-100/70 font-normal text-sm">چھاؤں &middot; Shade</span>
+        <span class="text-xl font-extrabold tracking-wide">🌳 CHHAON</span>
+        <span class="text-shade-200/70 font-normal text-sm">چھاؤں &middot; Shade</span>
       </a>
-      <nav class="flex gap-5 text-sm font-medium">
-        <a href="/" class="hover:text-heat-500 transition-colors">Live Map</a>
-        <a href="/gap" class="hover:text-heat-500 transition-colors">Gap Dashboard</a>
-        <a href="https://github.com/bilalhassan-567/chhaon" class="hover:text-heat-500 transition-colors">GitHub</a>
+      <nav class="flex gap-5 text-sm font-semibold">
+        <a href="/" class="hover:text-heat-400 transition-colors">Live Map</a>
+        <a href="/gap" class="hover:text-heat-400 transition-colors">Gap Dashboard</a>
+        <a href="https://github.com/bilalhassan-567/chhaon" class="hover:text-heat-400 transition-colors">GitHub</a>
       </nav>
     </div>
   </header>
@@ -51,7 +65,7 @@
     {% block content %}{% endblock %}
   </main>
 
-  <footer class="text-center text-xs text-slate-400 py-6 border-t border-slate-200 mt-8">
+  <footer class="text-center text-xs text-slate-400 py-6 px-4 border-t border-slate-200 mt-8">
     <p>Chhaon &mdash; Smart City Hackathon Lahore 2026 &middot; City Intelligence track</p>
     <p class="mt-1">
       <a href="https://github.com/bilalhassan-567/chhaon" class="underline hover:text-shade-600">Source on GitHub</a>
