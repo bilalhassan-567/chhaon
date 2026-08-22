@@ -24,7 +24,7 @@
 {% block content %}
 <section class="mb-6 rounded-2xl overflow-hidden bg-gradient-to-br from-shade-900 via-shade-800 to-heat-700 text-white p-8 shadow-xl animate-fadeInUp">
   <div class="inline-flex items-center gap-2 bg-white/10 backdrop-blur px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide mb-4">
-    <span class="relative flex h-2 w-2">
+    <span class="relative flex h-2 w-2" aria-hidden="true">
       <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-heat-300 opacity-75"></span>
       <span class="relative inline-flex rounded-full h-2 w-2 bg-heat-400"></span>
     </span>
@@ -39,20 +39,21 @@
 
 <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
   <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow animate-fadeInUp fade-1">
-    <p class="text-xs uppercase tracking-wide text-slate-400 font-semibold flex items-center gap-1">🌡️ Feels like</p>
+    <p class="text-xs uppercase tracking-wide text-slate-500 font-semibold flex items-center gap-1"><span aria-hidden="true">🌡️</span> Feels like</p>
     <p id="stat-apparent" class="text-2xl md:text-3xl font-extrabold text-heat-600 mt-1 tabular-nums">&hellip;</p>
   </div>
   <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow animate-fadeInUp fade-2">
-    <p class="text-xs uppercase tracking-wide text-slate-400 font-semibold flex items-center gap-1">💧 Air temp / humidity</p>
+    <p class="text-xs uppercase tracking-wide text-slate-500 font-semibold flex items-center gap-1"><span aria-hidden="true">💧</span> Air temp / humidity</p>
     <p id="stat-air" class="text-2xl md:text-3xl font-extrabold text-slate-700 mt-1 tabular-nums">&hellip;</p>
   </div>
   <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow animate-fadeInUp fade-3">
-    <p class="text-xs uppercase tracking-wide text-slate-400 font-semibold flex items-center gap-1">📍 Zones reporting</p>
+    <p class="text-xs uppercase tracking-wide text-slate-500 font-semibold flex items-center gap-1"><span aria-hidden="true">📍</span> Zones reporting</p>
     <p id="stat-zones" class="text-2xl md:text-3xl font-extrabold text-shade-700 mt-1 tabular-nums">&hellip;</p>
   </div>
 </div>
 
-<div id="map" class="rounded-xl border border-slate-300 shadow-md"></div>
+<div id="map" class="rounded-xl border border-slate-300 shadow-md" role="img" aria-label="Map of Lahore with circles sized by community heat-incident report density. A text summary of the same data follows below the map for screen reader users."></div>
+<p id="map-sr-summary" class="sr-only" aria-live="polite"></p>
 
 <div class="mt-3 flex flex-wrap items-center gap-4 text-xs text-slate-500">
   <span class="flex items-center gap-1.5"><span class="inline-block w-3 h-3 rounded-full" style="background:#ef4444;opacity:.6"></span> Real WhatsApp reports</span>
@@ -123,6 +124,18 @@
             (z.demo_count > 0 ? `${z.demo_count} demo report(s) (seeded for reliability)` : '')
           );
       });
+
+      // Leaflet's canvas map has no meaningful screen-reader content of its own —
+      // give an equivalent text summary of the same per-zone data instead of
+      // leaving screen reader users with only "Map of Lahore" and nothing further.
+      const withReports = zones.filter((z) => z.lat !== null);
+      const summary = withReports.length
+        ? `${withReports.length} zone(s) with reports: ` +
+          withReports
+            .map((z) => `${z.zone_name} (${z.real_count} real, ${z.demo_count} demo)`)
+            .join('; ')
+        : 'No zones have reports yet.';
+      document.getElementById('map-sr-summary').textContent = summary;
     });
 
   // Guards against Leaflet mis-measuring the container (e.g. if leaflet.css loads
