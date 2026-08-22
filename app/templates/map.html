@@ -4,7 +4,12 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
-  #map { height: 480px; }
+  /* Explicit height + containment on both the wrapper and Leaflet's own container,
+     so the map can't spill over its box if leaflet.css loads late or gets blocked
+     by a browser extension — Leaflet's tile/marker panes are absolutely positioned
+     and only stay clipped if *something* sets overflow:hidden here. */
+  #map { height: 480px; max-height: 60vh; position: relative; overflow: hidden; }
+  #map.leaflet-container { position: relative; overflow: hidden; }
   .leaflet-popup-content-wrapper { border-radius: 0.5rem; }
   .leaflet-bar a { border-radius: 0.375rem !important; }
 </style>
@@ -113,5 +118,11 @@
           );
       });
     });
+
+  // Guards against Leaflet mis-measuring the container (e.g. if leaflet.css loads
+  // late/blocked, or fonts/webfont swaps shift layout after first paint) — the
+  // standard fix is to force a resize check shortly after load and on window resize.
+  window.addEventListener('load', () => setTimeout(() => map.invalidateSize(), 200));
+  window.addEventListener('resize', () => map.invalidateSize());
 </script>
 {% endblock %}
