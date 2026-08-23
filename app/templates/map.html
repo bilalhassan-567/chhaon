@@ -56,9 +56,18 @@
 <div id="map" class="rounded-xl border border-slate-300 shadow-md" role="img" aria-label="Map of Lahore with circles sized by community heat-incident report density. A text summary of the same data follows below the map for screen reader users."></div>
 <p id="map-sr-summary" class="sr-only" aria-live="polite"></p>
 
-<div class="mt-3 flex flex-wrap items-center gap-4 text-xs text-slate-500">
-  <span class="flex items-center gap-1.5"><span class="inline-block w-3 h-3 rounded-full" style="background:#ef4444;opacity:.6"></span> Real WhatsApp reports</span>
-  <span class="flex items-center gap-1.5"><span class="inline-block w-3 h-3 rounded-full" style="background:#f59e0b;opacity:.6"></span> Demo reports (seeded for reliability during judging)</span>
+<div class="mt-3 flex flex-wrap items-center justify-between gap-2">
+  <div class="flex flex-wrap items-center gap-4 text-xs text-slate-500">
+    <span class="flex items-center gap-1.5"><span class="inline-block w-3 h-3 rounded-full" style="background:#ef4444;opacity:.6"></span> Real WhatsApp reports</span>
+    <span class="flex items-center gap-1.5"><span class="inline-block w-3 h-3 rounded-full" style="background:#f59e0b;opacity:.6"></span> Demo reports (seeded for reliability during judging)</span>
+  </div>
+  <span class="text-xs text-slate-400 flex items-center gap-1.5">
+    <span class="relative flex h-2 w-2" aria-hidden="true">
+      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-heat-400 opacity-75"></span>
+      <span class="relative inline-flex rounded-full h-2 w-2 bg-heat-500"></span>
+    </span>
+    Updates automatically &mdash; last refreshed <span id="last-updated">just now</span>
+  </span>
 </div>
 
 <p class="mt-4 text-sm text-slate-500">
@@ -109,54 +118,78 @@
     maxZoom: 19,
   }).addTo(map);
 
-  fetch('/api/heat-index')
-    .then((r) => r.json())
-    .then((d) => {
-      document.getElementById('stat-apparent').textContent = `${d.apparent_temperature_c}°C`;
-      document.getElementById('stat-air').textContent = `${d.temperature_c}°C / ${d.relative_humidity_pct}%`;
-    })
-    .catch(() => {
-      document.getElementById('stat-apparent').textContent = 'n/a';
-      document.getElementById('stat-air').textContent = 'n/a';
-    });
-
-  fetch('/api/reports')
-    .then((r) => r.json())
-    .then((zones) => {
-      document.getElementById('stat-zones').textContent = zones.length;
-      zones.forEach((z) => {
-        if (z.lat === null) return;
-        const radius = 300 + z.count * 250;
-        const isMixed = z.real_count > 0 && z.demo_count > 0;
-        const color = isMixed || z.real_count > 0 ? '#ef4444' : '#f59e0b';
-        L.circle([z.lat, z.lon], {
-          radius,
-          color,
-          fillColor: color,
-          fillOpacity: 0.35,
-          weight: 2,
-        })
-          .addTo(map)
-          .bindPopup(
-            `<strong>${z.zone_name}</strong><br>` +
-            (z.whatsapp_count > 0 ? `${z.whatsapp_count} report(s) via WhatsApp<br>` : '') +
-            (z.web_count > 0 ? `${z.web_count} report(s) via web form<br>` : '') +
-            (z.demo_count > 0 ? `${z.demo_count} demo report(s) (seeded for reliability)` : '')
-          );
+  function refreshHeatIndex() {
+    fetch('/api/heat-index')
+      .then((r) => r.json())
+      .then((d) => {
+        document.getElementById('stat-apparent').textContent = `${d.apparent_temperature_c}°C`;
+        document.getElementById('stat-air').textContent = `${d.temperature_c}°C / ${d.relative_humidity_pct}%`;
+      })
+      .catch(() => {
+        document.getElementById('stat-apparent').textContent = 'n/a';
+        document.getElementById('stat-air').textContent = 'n/a';
       });
+  }
 
-      // Leaflet's canvas map has no meaningful screen-reader content of its own —
-      // give an equivalent text summary of the same per-zone data instead of
-      // leaving screen reader users with only "Map of Lahore" and nothing further.
-      const withReports = zones.filter((z) => z.lat !== null);
-      const summary = withReports.length
-        ? `${withReports.length} zone(s) with reports: ` +
-          withReports
-            .map((z) => `${z.zone_name} (${z.real_count} real, ${z.demo_count} demo)`)
-            .join('; ')
-        : 'No zones have reports yet.';
-      document.getElementById('map-sr-summary').textContent = summary;
-    });
+  // A dedicated layer group for report circles — cleared and redrawn on every
+  // poll rather than re-adding on top of the old set, so a live update doesn't
+  // leave stale/duplicate markers behind.
+  const reportMarkers = L.layerGroup().addTo(map);
+
+  function refreshReports() {
+    fetch('/api/reports')
+      .then((r) => r.json())
+      .then((zones) => {
+        document.getElementById('stat-zones').textContent = zones.length;
+        reportMarkers.clearLayers();
+        zones.forEach((z) => {
+          if (z.lat === null) return;
+          const radius = 300 + z.count * 250;
+          const isMixed = z.real_count > 0 && z.demo_count > 0;
+          const color = isMixed || z.real_count > 0 ? '#ef4444' : '#f59e0b';
+          L.circle([z.lat, z.lon], {
+            radius,
+            color,
+            fillColor: color,
+            fillOpacity: 0.35,
+            weight: 2,
+          })
+            .addTo(reportMarkers)
+            .bindPopup(
+              `<strong>${z.zone_name}</strong><br>` +
+              (z.whatsapp_count > 0 ? `${z.whatsapp_count} report(s) via WhatsApp<br>` : '') +
+              (z.web_count > 0 ? `${z.web_count} report(s) via web form<br>` : '') +
+              (z.demo_count > 0 ? `${z.demo_count} demo report(s) (seeded for reliability)` : '')
+            );
+        });
+
+        // Leaflet's canvas map has no meaningful screen-reader content of its own —
+        // give an equivalent text summary of the same per-zone data instead of
+        // leaving screen reader users with only "Map of Lahore" and nothing further.
+        const withReports = zones.filter((z) => z.lat !== null);
+        const summary = withReports.length
+          ? `${withReports.length} zone(s) with reports: ` +
+            withReports
+              .map((z) => `${z.zone_name} (${z.real_count} real, ${z.demo_count} demo)`)
+              .join('; ')
+          : 'No zones have reports yet.';
+        document.getElementById('map-sr-summary').textContent = summary;
+        document.getElementById('last-updated').textContent = 'just now';
+      });
+  }
+
+  refreshHeatIndex();
+  refreshReports();
+
+  // Live auto-refresh, like a polling-driven reactive component — no full page
+  // reload needed to see a new report land. Paused while the tab isn't visible so
+  // an unattended browser tab doesn't keep burning function invocations/Firestore
+  // reads, and resumes immediately on refocus.
+  setInterval(() => {
+    if (document.visibilityState !== 'visible') return;
+    refreshHeatIndex();
+    refreshReports();
+  }, 15000);
 
   // Guards against Leaflet mis-measuring the container (e.g. if leaflet.css loads
   // late/blocked, or fonts/webfont swaps shift layout after first paint) — the

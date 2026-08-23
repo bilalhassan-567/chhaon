@@ -12,13 +12,22 @@
     </div>
     <div class="md:border-l md:border-white/10 md:pl-10 animate-fadeInUp fade-2">
       <p class="text-6xl md:text-7xl font-black text-heat-400 leading-none tabular-nums" id="punchline-count" data-target="{{ total_reports }}">0</p>
-      <p class="mt-3 text-shade-100/90 text-sm max-w-xs">community-reported heat incidents captured by Chhaon &mdash; right now, across {{ zones_reporting }} zones of Lahore.</p>
-      <p class="text-xs text-shade-300/60 italic mt-2">{{ real_reports }} real via WhatsApp &middot; {{ demo_reports }} demo (seeded for reliability during judging)</p>
+      <p class="mt-3 text-shade-100/90 text-sm max-w-xs">community-reported heat incidents captured by Chhaon &mdash; right now, across <span id="punchline-zones">{{ zones_reporting }}</span> zones of Lahore.</p>
+      <p class="text-xs text-shade-300/60 italic mt-2"><span id="punchline-breakdown">{{ real_reports }} real via WhatsApp &middot; {{ demo_reports }} demo (seeded for reliability during judging)</span></p>
     </div>
   </div>
 </section>
 
-<h1 class="text-2xl font-bold text-slate-900 mb-1">Official-vs-Reported Gap</h1>
+<div class="flex items-center justify-between flex-wrap gap-2 mb-1">
+  <h1 class="text-2xl font-bold text-slate-900">Official-vs-Reported Gap</h1>
+  <span class="text-xs text-slate-400 flex items-center gap-1.5">
+    <span class="relative flex h-2 w-2" aria-hidden="true">
+      <span id="live-pulse" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-heat-400 opacity-75"></span>
+      <span class="relative inline-flex rounded-full h-2 w-2 bg-heat-500"></span>
+    </span>
+    Updates automatically &mdash; last refreshed <span id="last-updated">just now</span>
+  </span>
+</div>
 <p class="text-sm text-slate-600 mb-6 max-w-3xl">
   There is no live official API for heat-mortality data. The two panels below are
   deliberately <strong>not</strong> a same-period comparison: the left panel is what
@@ -29,24 +38,26 @@
 <div class="grid md:grid-cols-2 gap-6">
   <section class="border border-heat-100 rounded-xl p-5 bg-gradient-to-b from-heat-50 to-white shadow-sm hover:shadow-md transition-shadow">
     <h2 class="font-semibold mb-3 text-heat-700 flex items-center gap-2"><span aria-hidden="true">🔥</span> Live community-reported signal</h2>
-    <p class="text-4xl font-extrabold text-heat-600 tabular-nums">{{ total_reports }}</p>
-    <p class="text-sm text-slate-500 mb-1">report(s) across {{ zones_reporting }} zone(s)</p>
-    <p class="text-xs text-slate-500 mb-4">
+    <p class="text-4xl font-extrabold text-heat-600 tabular-nums" id="live-total" data-target="{{ total_reports }}">{{ total_reports }}</p>
+    <p class="text-sm text-slate-500 mb-1">report(s) across <span id="live-zones">{{ zones_reporting }}</span> zone(s)</p>
+    <p class="text-xs text-slate-500 mb-4" id="live-breakdown">
       {{ real_reports }} real (via WhatsApp) &middot; {{ demo_reports }} demo (seeded for
       reliability during judging)
     </p>
-    {% if by_incident_type %}
-    <ul class="text-sm space-y-1">
-      {% for incident_type, count in by_incident_type.items() %}
-      <li class="flex justify-between border-b border-heat-100 py-1.5">
-        <span class="capitalize">{{ incident_type.replace('_', ' ') }}</span>
-        <span class="font-semibold text-heat-700">{{ count }}</span>
-      </li>
-      {% endfor %}
-    </ul>
-    {% else %}
-    <p class="text-sm text-slate-500 italic">No reports yet.</p>
-    {% endif %}
+    <div id="live-incident-list">
+      {% if by_incident_type %}
+      <ul class="text-sm space-y-1">
+        {% for incident_type, count in by_incident_type.items() %}
+        <li class="flex justify-between border-b border-heat-100 py-1.5">
+          <span class="capitalize">{{ incident_type.replace('_', ' ') }}</span>
+          <span class="font-semibold text-heat-700">{{ count }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="text-sm text-slate-500 italic">No reports yet.</p>
+      {% endif %}
+    </div>
   </section>
 
   <section class="border border-shade-100 rounded-xl p-5 bg-gradient-to-b from-shade-50 to-white shadow-sm hover:shadow-md transition-shadow">
@@ -74,20 +85,77 @@
 </p>
 
 <script>
-  (function () {
-    const el = document.getElementById('punchline-count');
-    const target = parseInt(el.dataset.target, 10) || 0;
-    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (target === 0 || reduceMotion) { el.textContent = String(target); return; }
-    const duration = 900;
-    const start = performance.now();
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Animates an element's displayed number from whatever it currently shows to a
+  // new target — used both for the first paint (from 0) and every subsequent poll
+  // (from the last known value), so a live update reads as a change, not a reset.
+  function animateNumber(el, target) {
+    const start = parseInt(el.textContent, 10) || 0;
+    if (start === target || reduceMotion) { el.textContent = String(target); return; }
+    const duration = 700;
+    const startTime = performance.now();
     function tick(now) {
-      const progress = Math.min((now - start) / duration, 1);
+      const progress = Math.min((now - startTime) / duration, 1);
       const eased = 1 - Math.pow(1 - progress, 3);
-      el.textContent = Math.round(eased * target);
+      el.textContent = Math.round(start + (target - start) * eased);
       if (progress < 1) requestAnimationFrame(tick);
     }
     requestAnimationFrame(tick);
-  })();
+  }
+
+  const INCIDENT_LABELS_ORDER = ['heat_exhaustion', 'heatstroke', 'death', 'other'];
+
+  function renderIncidentList(byType) {
+    const container = document.getElementById('live-incident-list');
+    const entries = Object.entries(byType).sort(
+      (a, b) => INCIDENT_LABELS_ORDER.indexOf(a[0]) - INCIDENT_LABELS_ORDER.indexOf(b[0])
+    );
+    if (entries.length === 0) {
+      container.innerHTML = '<p class="text-sm text-slate-500 italic">No reports yet.</p>';
+      return;
+    }
+    container.innerHTML =
+      '<ul class="text-sm space-y-1">' +
+      entries
+        .map(
+          ([type, count]) =>
+            `<li class="flex justify-between border-b border-heat-100 py-1.5">` +
+            `<span class="capitalize">${type.replace('_', ' ')}</span>` +
+            `<span class="font-semibold text-heat-700">${count}</span></li>`
+        )
+        .join('') +
+      '</ul>';
+  }
+
+  function applyGapData(data) {
+    animateNumber(document.getElementById('punchline-count'), data.total_reports);
+    animateNumber(document.getElementById('live-total'), data.total_reports);
+    document.getElementById('punchline-zones').textContent = data.zones_reporting;
+    document.getElementById('live-zones').textContent = data.zones_reporting;
+    document.getElementById('punchline-breakdown').textContent =
+      `${data.real_reports} real via WhatsApp · ${data.demo_reports} demo (seeded for reliability during judging)`;
+    document.getElementById('live-breakdown').textContent =
+      `${data.real_reports} real (via WhatsApp) · ${data.demo_reports} demo (seeded for reliability during judging)`;
+    renderIncidentList(data.by_incident_type);
+    document.getElementById('last-updated').textContent = 'just now';
+  }
+
+  function poll() {
+    // Don't burn function invocations/Firestore reads polling a tab nobody's
+    // looking at — resumes immediately when the tab regains focus.
+    if (document.visibilityState !== 'visible') return;
+    fetch('/api/gap')
+      .then((r) => r.json())
+      .then(applyGapData)
+      .catch(() => {});
+  }
+
+  // Initial numbers are already server-rendered (progressive enhancement — the page
+  // is correct even if this script fails to load); this just animates the punchline
+  // from 0 on first paint, matching the original one-time behavior.
+  animateNumber(document.getElementById('punchline-count'), parseInt(document.getElementById('punchline-count').dataset.target, 10) || 0);
+
+  setInterval(poll, 15000);
 </script>
 {% endblock %}
