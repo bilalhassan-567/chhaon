@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 import pytest
 
 from app.config import FIREBASE_CREDENTIALS_JSON, FIREBASE_CREDENTIALS_PATH
-from app.models import GeoSource, IncidentType, NewReport, PushSubscription
+from app.models import GeoSource, IncidentType, NewReport, PushSubscription, WhatsAppConversationStage, WhatsAppConversationState
 
 pytestmark = pytest.mark.skipif(
     not (FIREBASE_CREDENTIALS_PATH or FIREBASE_CREDENTIALS_JSON),
@@ -61,6 +61,14 @@ def push_subscription_store():
     from app.storage.push_subscription_store import FirestorePushSubscriptionStore
 
     store = FirestorePushSubscriptionStore()
+    yield store
+
+
+@pytest.fixture
+def conversation_store():
+    from app.storage.conversation_store import FirestoreConversationStateStore
+
+    store = FirestoreConversationStateStore()
     yield store
 
 
@@ -137,3 +145,24 @@ def test_push_subscription_store_round_trip(push_subscription_store, test_zone_i
     finally:
         push_subscription_store.unsubscribe(endpoint)
     assert push_subscription_store.list_for_zone(test_zone_id) == []
+
+
+def test_conversation_state_store_round_trip(conversation_store, test_phone, test_zone_id):
+    assert conversation_store.get(test_phone) is None
+
+    conversation_store.set(
+        WhatsAppConversationState(
+            phone=test_phone,
+            stage=WhatsAppConversationStage.awaiting_incident_type,
+            zone_id=test_zone_id,
+            geo_source=GeoSource.zone_name,
+        )
+    )
+    try:
+        state = conversation_store.get(test_phone)
+        assert state is not None
+        assert state.stage is WhatsAppConversationStage.awaiting_incident_type
+        assert state.zone_id == test_zone_id
+    finally:
+        conversation_store.clear(test_phone)
+    assert conversation_store.get(test_phone) is None

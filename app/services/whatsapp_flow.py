@@ -1,10 +1,13 @@
 """The guided WhatsApp report flow sketched in docs/master-workout/day1-sketches.md,
 plus alert registration (Day 6).
 
-Conversation state is kept in-memory, keyed by sender phone number. That's a known,
-accepted limitation for a hackathon demo (state resets on restart) — fine for a live
-demo of one conversation at a time; would move to Firestore alongside reports if this
-needed to survive restarts or handle many concurrent conversations.
+Conversation state is persisted via ConversationStateStore (Local/Firestore), the same
+pattern as every other store in this project. It used to be a plain in-memory dict —
+moved off that after a real, confirmed bug (25 Aug 2026, see PROGRESS.md): Vercel's
+serverless functions don't guarantee two messages in the same conversation are handled
+by the same warm process, so an in-memory dict could silently forget an in-progress
+report between messages sent less than a minute apart, restarting the flow from
+scratch with no error either side.
 
 Security note on alert registration: it is reachable ONLY through this WhatsApp flow,
 never through a web form. A phone number here is always the number Meta verified as
@@ -15,12 +18,9 @@ an arbitrary phone number would let anyone sign up someone else for unwanted mes
 this design avoids that class of abuse by construction rather than by validation.
 """
 
-from dataclasses import dataclass
-from enum import Enum, auto
-
-from app.models import GeoSource, IncidentType, NewReport
+from app.models import GeoSource, IncidentType, NewReport, WhatsAppConversationStage, WhatsAppConversationState
 from app.services.zones import find_zone_by_name, nearest_zone
-from app.storage import get_registration_store, get_store
+from app.storage import get_conversation_store, get_registration_store, get_store
 
 INCIDENT_TYPE_MENU = {
     "1": IncidentType.heat_exhaustion,
@@ -63,58 +63,41 @@ STOP_KEYWORDS = {"stop", "alert off", "unsubscribe"}
 ALERT_ON_KEYWORDS = {"alert on", "alert", "subscribe"}
 
 
-class Stage(Enum):
-    AWAITING_LOCATION = auto()
-    AWAITING_INCIDENT_TYPE = auto()
-    AWAITING_ALERT_ZONE = auto()
-
-
-@dataclass
-class ConversationState:
-    stage: Stage
-    zone_id: str | None = None
-    lat: float | None = None
-    lon: float | None = None
-    geo_source: GeoSource | None = None
-
-
-_conversations: dict[str, ConversationState] = {}
-
-
 def handle_incoming_message(
     phone: str, body: str, latitude: str | None = None, longitude: str | None = None
 ) -> str:
     normalized = body.strip().lower()
+    store = get_conversation_store()
 
     # Commands are checked before anything else, regardless of what the sender was
     # mid-way through — the safest, least surprising behaviour, and it means a stuck
     # or confused conversation can always be escaped with a keyword.
     if normalized in STOP_KEYWORDS:
-        _conversations.pop(phone, None)
+        store.clear(phone)
         get_registration_store().unregister_all(phone)
         return ALERT_STOP_CONFIRMATION
 
     if normalized in ALERT_ON_KEYWORDS:
-        _conversations[phone] = ConversationState(stage=Stage.AWAITING_ALERT_ZONE)
+        store.set(WhatsAppConversationState(phone=phone, stage=WhatsAppConversationStage.awaiting_alert_zone))
         return ALERT_ZONE_PROMPT
 
-    state = _conversations.get(phone)
+    state = store.get(phone)
 
     if state is None:
-        _conversations[phone] = ConversationState(stage=Stage.AWAITING_LOCATION)
+        store.set(WhatsAppConversationState(phone=phone, stage=WhatsAppConversationStage.awaiting_location))
         return WELCOME_PROMPT
 
-    if state.stage is Stage.AWAITING_LOCATION:
-        return _handle_location_step(phone, state, body, latitude, longitude)
+    if state.stage is WhatsAppConversationStage.awaiting_location:
+        return _handle_location_step(store, state, body, latitude, longitude)
 
-    if state.stage is Stage.AWAITING_INCIDENT_TYPE:
-        return _handle_incident_type_step(phone, state, body)
+    if state.stage is WhatsAppConversationStage.awaiting_incident_type:
+        return _handle_incident_type_step(store, state, body)
 
-    if state.stage is Stage.AWAITING_ALERT_ZONE:
-        return _handle_alert_zone_step(phone, body, latitude, longitude)
+    if state.stage is WhatsAppConversationStage.awaiting_alert_zone:
+        return _handle_alert_zone_step(store, phone, body, latitude, longitude)
 
     # Shouldn't happen, but never leave a caller stuck.
-    _conversations.pop(phone, None)
+    store.clear(phone)
     return WELCOME_PROMPT
 
 
@@ -128,7 +111,7 @@ def _resolve_zone(body: str, latitude: str | None, longitude: str | None):
 
 
 def _handle_location_step(
-    phone: str, state: ConversationState, body: str, latitude: str | None, longitude: str | None
+    store, state: WhatsAppConversationState, body: str, latitude: str | None, longitude: str | None
 ) -> str:
     zone, geo_source = _resolve_zone(body, latitude, longitude)
     if zone is None:
@@ -138,11 +121,12 @@ def _handle_location_step(
     state.geo_source = geo_source
     if geo_source is GeoSource.location_pin:
         state.lat, state.lon = float(latitude), float(longitude)
-    state.stage = Stage.AWAITING_INCIDENT_TYPE
+    state.stage = WhatsAppConversationStage.awaiting_incident_type
+    store.set(state)
     return f"Got it: {zone.name}. {INCIDENT_TYPE_PROMPT}"
 
 
-def _handle_incident_type_step(phone: str, state: ConversationState, body: str) -> str:
+def _handle_incident_type_step(store, state: WhatsAppConversationState, body: str) -> str:
     choice = body.strip()
     incident_type = INCIDENT_TYPE_MENU.get(choice)
     if incident_type is None:
@@ -157,7 +141,7 @@ def _handle_incident_type_step(phone: str, state: ConversationState, body: str) 
             incident_type=incident_type,
         )
     )
-    _conversations.pop(phone, None)
+    store.clear(state.phone)
     return (
         f"Logged: {report.zone_id}, {incident_type.value}. Thank you — this report "
         "is anonymous and helps track heat risk in your area. This is a "
@@ -165,13 +149,13 @@ def _handle_incident_type_step(phone: str, state: ConversationState, body: str) 
     )
 
 
-def _handle_alert_zone_step(phone: str, body: str, latitude: str | None, longitude: str | None) -> str:
+def _handle_alert_zone_step(store, phone: str, body: str, latitude: str | None, longitude: str | None) -> str:
     zone, _ = _resolve_zone(body, latitude, longitude)
     if zone is None:
         return "Sorry, I didn't recognize that area. " + ALERT_ZONE_PROMPT
 
     get_registration_store().register(phone, zone.id)
-    _conversations.pop(phone, None)
+    store.clear(phone)
     return (
         f"You're registered for heat warnings in {zone.name}. We'll message you here "
         "when the heat index reaches a dangerous level, with practical guidance. "

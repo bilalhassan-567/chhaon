@@ -71,6 +71,10 @@ VAPID_CLAIMS_EMAIL = os.getenv("VAPID_CLAIMS_EMAIL", "mailto:example@example.com
 
 LOCAL_PUSH_SUBSCRIPTIONS_FILE = DATA_DIR / "push_subscriptions.local.json"
 
+LOCAL_CONVERSATIONS_FILE = DATA_DIR / "conversations.local.json"
+
+CONVERSATION_STATE_TTL_MINUTES = int(os.getenv("CONVERSATION_STATE_TTL_MINUTES", "30"))
+
 # Rate limit on the web report form, per submitting IP address — a WhatsApp message
 # has some inherent friction (you need a WhatsApp account); an open web form has less,
 # so this needs its own limit rather than assuming WhatsApp's is enough. Same

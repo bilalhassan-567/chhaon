@@ -50,6 +50,23 @@ class AlertRegistration(BaseModel):
     registered_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
+class WhatsAppConversationStage(str, Enum):
+    awaiting_location = "awaiting_location"
+    awaiting_incident_type = "awaiting_incident_type"
+    awaiting_alert_zone = "awaiting_alert_zone"
+
+
+class WhatsAppConversationState(BaseModel):
+    
+    phone: str
+    stage: WhatsAppConversationStage
+    zone_id: str | None = None
+    lat: float | None = None
+    lon: float | None = None
+    geo_source: GeoSource | None = None
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
 class PushSubscription(BaseModel):
     """A browser's Web Push subscription (RFC 8292), the WhatsApp-independent analog
     of AlertRegistration. Unlike a phone number, this can't be used to register

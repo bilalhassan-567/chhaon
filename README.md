@@ -137,6 +137,18 @@ Vercel auto-detects `app/main.py`'s `FastAPI` instance with zero restructuring n
    reset on a cold start, same known limitation this project already had on any
    single-instance free host; not a regression introduced by this move.
 
+## WhatsApp test-mode limitation
+
+Meta's WhatsApp Cloud API restricts an app in Development mode to exchanging messages
+with only up to 5 phone numbers that have been manually added and OTP-verified in the
+App Dashboard's recipient list — and the restriction is **bidirectional**: a message
+from an unlisted number never reaches our webhook at all, silently, on Meta's side.
+Opening WhatsApp intake to the general public requires Meta Business Verification and
+App Review for Advanced Access, neither of which is achievable inside a hackathon
+timeline. This is exactly why the [web report form](https://chhaon-six.vercel.app/report)
+and Web Push alert channel exist as a first-class second path rather than a fallback
+bolted on afterward — anyone can use them today, with zero Meta gating.
+
 ## Development notes
 
 Built with AI-assisted development tools as part of the solo build process. All product,

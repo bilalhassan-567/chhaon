@@ -1,19 +1,21 @@
 import pytest
 
-from app.services.whatsapp_flow import _conversations
 from app.storage.alert_state_store import LocalJSONAlertStateStore
+from app.storage.conversation_store import LocalJSONConversationStateStore
 from app.storage.local_store import LocalJSONReportStore
 from app.storage.push_subscription_store import LocalJSONPushSubscriptionStore
 from app.storage.registration_store import LocalJSONRegistrationStore
 
 
 @pytest.fixture(autouse=True)
-def reset_conversations():
-    """Conversation state is a module-level dict keyed by phone number — clear it
-    between tests so one test's phone numbers can't bleed into another's."""
-    _conversations.clear()
-    yield
-    _conversations.clear()
+def conversation_store(tmp_path, monkeypatch):
+    """Conversation state is now a persisted store (see conversation_store.py's
+    docstring for why) — isolate it per test the same way every other store is,
+    patched at the point of use, so one test's phone numbers can't bleed into
+    another's and no test depends on real local/Firestore conversation data."""
+    store = LocalJSONConversationStateStore(path=tmp_path / "conversations.json")
+    monkeypatch.setattr("app.services.whatsapp_flow.get_conversation_store", lambda: store)
+    return store
 
 
 @pytest.fixture(autouse=True)

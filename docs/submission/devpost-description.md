@@ -57,6 +57,14 @@ its Blueprint and plain Web Service deploy flows despite advertising a card-free
 so deployment moved to Vercel instead, which needed the app restructured for a
 serverless execution model rather than a long-running process.
 
+A third, standing constraint: Meta's WhatsApp Cloud API restricts an app in Development
+mode to exchanging messages with only 5 manually-added, OTP-verified phone numbers —
+bidirectionally — until the business completes Meta Business Verification and App
+Review, neither achievable inside the hackathon window. Rather than let the whole
+project's intake depend on a verification queue outside our control, the same
+reporting and alerting logic was built a second, fully independent way in: a plain web
+form and Web Push, reachable by anyone with zero Meta gating.
+
 ## Accomplishments we're proud of
 
 The Gap Dashboard leading with a direct, single-glance comparison: zero heat deaths
@@ -66,6 +74,15 @@ end-to-end (not just designed) — two reports from the same neighbourhood withi
 window merge into one record instead of double-counting — and keeping every demo/seed
 data point honestly distinguishable from real WhatsApp reports everywhere it's shown,
 rather than quietly blending the two to make the map look busier.
+
+Also catching a real reliability bug through actual live testing rather than a demo
+that only ever ran once: mid-conversation WhatsApp state was originally kept in server
+memory, so a serverless cold start between two messages could silently forget an
+in-progress report and restart it. Found this by testing the deployed app over a real
+phone, root-caused it correctly (not guessed), and fixed it by moving conversation
+state into the same persisted store pattern every other piece of data in the app
+already used — verified with a regression test that simulates a cold start on every
+message of the flow, not just a manual retest.
 
 ## What we learned
 
@@ -77,11 +94,14 @@ explicit that this is a community-reported signal and not a medical or legal rec
 
 ## What's next
 
-An **SMS/voice alert channel** for outdoor workers and households without smartphones or
-a data plan — the WhatsApp alert layer covers connected users today, but reaching the
-least-connected residents (Problem Statement 5's explicit focus) means a channel that
-doesn't require a smartphone app at all. Also: hospital-partner integration, and a
-verified official data feed if one becomes available. The same architecture needs no
+Completing **Meta Business Verification and App Review** to lift the 5-recipient
+development-mode cap and open WhatsApp intake to the general public — everything else
+in the WhatsApp flow already works end-to-end today; this is a verification-queue wait,
+not a build task. Also an **SMS/voice alert channel** for outdoor workers and households
+without smartphones or a data plan — the WhatsApp alert layer covers connected users
+today, but reaching the least-connected residents (Problem Statement 5's explicit focus)
+means a channel that doesn't require a smartphone app at all. Also: hospital-partner
+integration, and a verified official data feed if one becomes available. The same architecture needs no
 Lahore-specific assumption — it runs for any Pakistani city with basic hospital/community
 reporting, because the underlying data gap (Amnesty's report covers Sindh and Punjab
 both) is documented as national, not local.
