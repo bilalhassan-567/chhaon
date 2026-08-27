@@ -73,7 +73,7 @@ LOCAL_PUSH_SUBSCRIPTIONS_FILE = DATA_DIR / "push_subscriptions.local.json"
 
 LOCAL_CONVERSATIONS_FILE = DATA_DIR / "conversations.local.json"
 
-CONVERSATION_STATE_TTL_MINUTES = int(os.getenv("CONVERSATION_STATE_TTL_MINUTES", "30"))
+CONVERSATION_STATE_TTL_MINUTES = int(os.getenv("CONVERSATION_STATE_TTL_MINUTES", "5"))
 
 # Rate limit on the web report form, per submitting IP address — a WhatsApp message
 # has some inherent friction (you need a WhatsApp account); an open web form has less,
